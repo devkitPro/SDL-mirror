@@ -55,7 +55,7 @@
 #define SDL_DYNAMIC_API 0
 #elif defined(__clang_analyzer__)
 #define SDL_DYNAMIC_API 0  /* Turn off for static analysis, so reports are more clear. */
-#elif defined(SWITCH) && SWITCH
+#elif defined(__SWITCH__) && __SWITCH__
 #define SDL_DYNAMIC_API 0  /* Probably not useful on switch. */
 #endif
 
