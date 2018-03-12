@@ -25,7 +25,7 @@
 
 /* SDL internals */
 #include "../SDL_sysvideo.h"
-#include "events/SDL_keyboard_c.h"
+#include "../../events/SDL_keyboard_c.h"
 
 #include <switch.h>
 

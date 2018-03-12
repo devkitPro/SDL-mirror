@@ -144,12 +144,13 @@ SDL_bool SDL_SYS_JoystickAttached(SDL_Joystick *joystick)
 void
 SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 {
+    u64 changed;
+    static JoystickState pad_old[JOYSTICK_COUNT];
+
     int index = (int) SDL_JoystickInstanceID(joystick);
     if (index > JOYSTICK_COUNT) {
         return;
     }
-
-    static JoystickState pad_old[JOYSTICK_COUNT];
 
     hidJoystickRead(&pad[index].l_pos, pad[index].id, JOYSTICK_LEFT);
     hidJoystickRead(&pad[index].r_pos, pad[index].id, JOYSTICK_RIGHT);
@@ -174,7 +175,7 @@ SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
     }
 
     // Buttons
-    u64 changed = pad_old[index].buttons ^pad[index].buttons;
+    changed = pad_old[index].buttons ^pad[index].buttons;
     pad_old[index].buttons = pad[index].buttons;
     if (changed) {
         for (int i = 0; i < sizeof(pad_mapping) / sizeof(*pad_mapping); i++) {
