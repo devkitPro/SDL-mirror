@@ -123,7 +123,14 @@ static int SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMo
 
 static void SWITCH_PumpEvents(_THIS)
 {
-    // TODO
+    if (!appletMainLoop()) {
+        SDL_Event ev;
+        ev.type = SDL_QUIT;
+        SDL_PushEvent(&ev);
+        return;
+    }
+
+    hidScanInput();
 }
 
 typedef struct

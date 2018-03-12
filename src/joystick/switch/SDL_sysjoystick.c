@@ -151,7 +151,6 @@ SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 
     static JoystickState pad_old[JOYSTICK_COUNT];
 
-    hidScanInput();
     hidJoystickRead(&pad[index].l_pos, pad[index].id, JOYSTICK_LEFT);
     hidJoystickRead(&pad[index].r_pos, pad[index].id, JOYSTICK_RIGHT);
     pad[index].buttons = hidKeysHeld(pad[index].id);
