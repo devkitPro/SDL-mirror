@@ -25,7 +25,8 @@ set(SRC_DIRS
         src
         src/atomic
         src/audio
-        src/audio/switch
+        #src/audio/switch
+        src/audio/dummy
         src/cpuinfo
         src/events
         src/file
