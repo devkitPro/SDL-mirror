@@ -148,6 +148,7 @@ static int SWITCH_CreateWindowFramebuffer(_THIS, SDL_Window *window, Uint32 *for
     int bpp;
     Uint32 r, g, b, a;
     SDL_Surface *surface;
+    SWITCH_WindowData *data;
 
     // create sdl surface framebuffer
     SDL_PixelFormatEnumToMasks(SDL_PIXELFORMAT_ABGR8888, &bpp, &r, &g, &b, &a);
@@ -157,7 +158,7 @@ static int SWITCH_CreateWindowFramebuffer(_THIS, SDL_Window *window, Uint32 *for
     }
 
     // hold a pointer to our surface
-    SWITCH_WindowData *data = SDL_calloc(1, sizeof(SWITCH_WindowData));
+    data = SDL_calloc(1, sizeof(SWITCH_WindowData));
     data->surface = surface;
     SDL_SetWindowData(window, SWITCH_DATA, data);
 
