@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
                        event.jbutton.which, event.jbutton.button);
                 // seek for joystick #0 down (B)
                 // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L51
-                if (event.jbutton.which == 1 && event.jbutton.button == 1) {
+                if (event.jbutton.which == 0 && event.jbutton.button == 1) {
                     done = 1;
                 }
                 break;
