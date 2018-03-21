@@ -57,9 +57,7 @@ static const HidControllerKeys pad_mapping[] = {
     KEY_PLUS, KEY_MINUS,
     KEY_DLEFT, KEY_DUP, KEY_DRIGHT, KEY_DDOWN,
     KEY_LSTICK_LEFT, KEY_LSTICK_UP, KEY_LSTICK_RIGHT, KEY_LSTICK_DOWN,
-    KEY_RSTICK_LEFT, KEY_RSTICK_UP, KEY_RSTICK_RIGHT, KEY_RSTICK_DOWN,
-    KEY_SL, KEY_SR,
-    KEY_TOUCH
+    KEY_RSTICK_LEFT, KEY_RSTICK_UP, KEY_RSTICK_RIGHT, KEY_RSTICK_DOWN
 };
 
 /* Function to scan the system for joysticks.
@@ -183,7 +181,7 @@ SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
     changed = pad_old[index].buttons ^ pad[index].buttons;
     pad_old[index].buttons = pad[index].buttons;
     if (changed) {
-        for (int i = 0; i < sizeof(pad_mapping) / sizeof(*pad_mapping); i++) {
+        for (int i = 0; i < joystick->nbuttons; i++) {
             if (changed & pad_mapping[i]) {
                 SDL_PrivateJoystickButton(
                     joystick, (Uint8) i,
@@ -203,6 +201,9 @@ SDL_SYS_JoystickClose(SDL_Joystick *joystick)
 void
 SDL_SYS_JoystickQuit(void)
 {
+    for (int i = 0; i < JOYSTICK_COUNT; i++) {
+        hidSetNpadJoyAssignmentModeDual(pad[i].id);
+    }
 }
 
 SDL_JoystickGUID SDL_SYS_JoystickGetDeviceGUID(int device_index)
