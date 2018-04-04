@@ -76,11 +76,13 @@ SWITCH_PollTouch(void)
 
             // Send an initial touch
             SDL_SendTouch(0, (SDL_FingerID) i, SDL_TRUE,
-                          touchState.touch[i].position.px, touchState.touch[i].position.py, 1);
+                          (float) touchState.touch[i].position.px / 1280.0f,
+                          (float) touchState.touch[i].position.py / 720.0f, 1);
 
             // Always send the motion
             SDL_SendTouchMotion(0, (SDL_FingerID) i,
-                                touchState.touch[i].position.px, touchState.touch[i].position.py, 1);
+                                (float) touchState.touch[i].position.px / 1280.0f,
+                                (float) touchState.touch[i].position.py / 720.0f, 1);
         }
     }
 
@@ -101,7 +103,8 @@ SWITCH_PollTouch(void)
             if (finger_up == 1) {
                 // Finger released from screen
                 SDL_SendTouch((SDL_TouchID) 0, (SDL_FingerID) touchState_old.touch[i].id, SDL_FALSE,
-                              touchState_old.touch[i].position.px, touchState_old.touch[i].position.py, 1);
+                              (float) touchState_old.touch[i].position.px / 1280.0f,
+                              (float) touchState_old.touch[i].position.py / 720.0f, 1);
             }
         }
     }
