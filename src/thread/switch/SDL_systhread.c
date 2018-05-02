@@ -41,7 +41,7 @@ SDL_SYS_RunThread(void *data)
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
-    Result res = threadCreate(&thread->handle, SDL_SYS_RunThread, args, STACK_SIZE, 0x1C, -2);
+    Result res = threadCreate(&thread->handle, SDL_SYS_RunThread, args, STACK_SIZE, 0x2C, -2);
     if (res != 0) {
         return SDL_SetError("threadCreate() failed: 0x%08X", res);
     }
@@ -61,24 +61,41 @@ void SDL_SYS_SetupThread(const char *name)
 
 SDL_threadID SDL_ThreadID(void)
 {
-    return (SDL_threadID) armGetTls();
+    u64 tid = 0;
+
+    svcGetThreadId(&tid, CUR_THREAD_HANDLE);
+
+    return (SDL_threadID) tid;
 }
 
 void SDL_SYS_WaitThread(SDL_Thread *thread)
 {
-    threadWaitForExit(&thread->handle);
-    threadClose(&thread->handle);
+    if (thread && thread->handle.handle) {
+        threadWaitForExit(&thread->handle);
+        threadClose(&thread->handle);
+    }
 }
 
 void SDL_SYS_DetachThread(SDL_Thread *thread)
 {
-    if (thread->handle.handle) {
+    if (thread && thread->handle.handle) {
         threadClose(&thread->handle);
     }
 }
 
 int SDL_SYS_SetThreadPriority(SDL_ThreadPriority priority)
 {
+    u32 value = 0x2C;
+
+    if (priority == SDL_THREAD_PRIORITY_LOW) {
+        value = 0x2D;
+    }
+    else if (priority == SDL_THREAD_PRIORITY_HIGH) {
+        value = 0x2B;
+    }
+
+    svcSetThreadPriority(CUR_THREAD_HANDLE, value);
+
     return 0;
 }
 
