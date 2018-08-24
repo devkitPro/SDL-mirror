@@ -38,7 +38,7 @@ struct SDL_cond
 
 struct SDL_mutex
 {
-    Mutex mtx;
+    RMutex mtx;
 };
 
 /* Create a condition variable */
@@ -120,7 +120,7 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
         return SDL_SetError("Passed a NULL condition variable");
     }
 
-    condvarWaitTimeout(&cond->var, &mutex->mtx, ms * 1000000);
+    condvarWaitTimeout(&cond->var, &mutex->mtx.lock, ms * 1000000);
 
     return 0;
 }
