@@ -33,8 +33,12 @@
 
 struct SDL_cond
 {
-    Mutex mutex;
     CondVar var;
+};
+
+struct SDL_mutex
+{
+    Mutex mtx;
 };
 
 /* Create a condition variable */
@@ -45,7 +49,6 @@ SDL_CreateCond(void)
 
     cond = (SDL_cond *) SDL_malloc(sizeof(SDL_cond));
     if (cond) {
-        mutexInit(&cond->mutex);
         condvarInit(&cond->var);
     }
     else {
@@ -117,13 +120,7 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
         return SDL_SetError("Passed a NULL condition variable");
     }
 
-    /* Unlock the mutex, as is required by condition variable semantics */
-    SDL_UnlockMutex(mutex);
-
-    condvarWaitTimeout(&cond->var, &cond->mutex, ms * 1000000);
-
-    /* Lock the mutex, as is required by condition variable semantics */
-    SDL_LockMutex(mutex);
+    condvarWaitTimeout(&cond->var, &mutex->mtx, ms * 1000000);
 
     return 0;
 }

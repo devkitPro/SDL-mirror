@@ -29,7 +29,7 @@
 
 struct SDL_mutex
 {
-    RMutex mtx;
+    Mutex mtx;
 };
 
 /* Create a mutex */
@@ -38,7 +38,7 @@ SDL_CreateMutex(void)
 {
     SDL_mutex *mutex = (SDL_mutex *) SDL_malloc(sizeof(*mutex));
     if (mutex) {
-        rmutexInit(&mutex->mtx);
+        mutexInit(&mutex->mtx);
     }
     else {
         SDL_OutOfMemory();
@@ -64,7 +64,7 @@ SDL_mutexP(SDL_mutex *mutex)
         return SDL_SetError("Passed a NULL mutex");
     }
 
-    rmutexLock(&mutex->mtx);
+    mutexLock(&mutex->mtx);
 
     return 0;
 }
@@ -77,7 +77,7 @@ SDL_mutexV(SDL_mutex *mutex)
         return SDL_SetError("Passed a NULL mutex");
     }
 
-    rmutexUnlock(&mutex->mtx);
+    mutexUnlock(&mutex->mtx);
 
     return 0;
 }
