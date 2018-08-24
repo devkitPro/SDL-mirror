@@ -46,7 +46,7 @@ SDL_CreateCond(void)
     cond = (SDL_cond *) SDL_malloc(sizeof(SDL_cond));
     if (cond) {
         mutexInit(&cond->mutex);
-        condvarInit(&cond->var, &cond->mutex);
+        condvarInit(&cond->var);
     }
     else {
         SDL_OutOfMemory();
@@ -120,7 +120,7 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
     /* Unlock the mutex, as is required by condition variable semantics */
     SDL_UnlockMutex(mutex);
 
-    condvarWaitTimeout(&cond->var, ms * 1000000);
+    condvarWaitTimeout(&cond->var, &cond->mutex, ms * 1000000);
 
     /* Lock the mutex, as is required by condition variable semantics */
     SDL_LockMutex(mutex);
