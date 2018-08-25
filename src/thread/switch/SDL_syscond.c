@@ -120,7 +120,11 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
         return SDL_SetError("Passed a NULL condition variable");
     }
 
+	SDL_UnlockMutex(mutex);
+
     condvarWaitTimeout(&cond->var, &mutex->mtx.lock, ms * 1000000);
+
+	SDL_LockMutex(mutex);
 
     return 0;
 }
