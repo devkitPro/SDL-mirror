@@ -116,15 +116,22 @@ Thread B:
 int
 SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
 {
+    uint32_t mutex_state[2];
+
     if (!cond) {
         return SDL_SetError("Passed a NULL condition variable");
     }
 
-	SDL_UnlockMutex(mutex);
+	// backup mutex state
+    mutex_state[0] = mutex->mtx.thread_tag;
+    mutex_state[1] = mutex->mtx.counter;
+    mutex->mtx.thread_tag = 0;
+    mutex->mtx.counter = 0;
 
     condvarWaitTimeout(&cond->var, &mutex->mtx.lock, ms * 1000000);
 
-	SDL_LockMutex(mutex);
+    mutex->mtx.thread_tag = mutex_state[0];
+    mutex->mtx.counter = mutex_state[1];
 
     return 0;
 }
