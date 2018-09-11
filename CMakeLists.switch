@@ -10,7 +10,7 @@ set(CMAKE_CXX_COMPILER "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-g++")
 set(CMAKE_ASM_COMPILER "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-as")
 set(CMAKE_AR "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-gcc-ar" CACHE STRING "")
 set(CMAKE_RANLIB "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-gcc-ranlib" CACHE STRING "")
-set(CMAKE_C_FLAGS "-O2 -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -ffunction-sections -I${DEVKITPRO}/libnx/include -I${DEVKITPRO}/portlibs/switch/include" CACHE STRING "C flags")
+set(CMAKE_C_FLAGS "-g -O2 -march=armv8-a -mtune=cortex-a57 -mtp=soft -ftls-model=local-exec -fPIC -I${DEVKITPRO}/libnx/include -I${DEVKITPRO}/portlibs/switch/include" CACHE STRING "C flags")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -fno-exceptions" CACHE STRING "C++ flags")
 set(CMAKE_FIND_ROOT_PATH ${DEVKITPRO} ${DEVKITPRO}/devkitA64 ${DEVKITPRO}/libnx ${DEVKITPRO}/portlibs/switch)
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
@@ -69,7 +69,6 @@ target_include_directories(${PROJECT_NAME}.elf PRIVATE include)
 target_compile_options(${PROJECT_NAME}.elf PRIVATE -O3 -D__SWITCH__)
 target_link_libraries(${PROJECT_NAME}.elf
         ${PROJECT_NAME}
-        ${DEVKITPRO}/portlibs/switch/lib/libglad.a
         ${DEVKITPRO}/portlibs/switch/lib/libEGL.a
         ${DEVKITPRO}/portlibs/switch/lib/libglapi.a
         ${DEVKITPRO}/portlibs/switch/lib/libdrm_nouveau.a

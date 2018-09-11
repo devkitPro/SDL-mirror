@@ -33,14 +33,12 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // SDL_GL_CONTEXT_PROFILE_ES is enabled by default when using SDL_WINDOW_OPENGL
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    // SDL_GL_CONTEXT_PROFILE_ES is enabled by default when using SDL_WINDOW_OPENGL,
+    // but forcing OpenGL ES version to 2.0 prevent an internal window creation/deletion cycle
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-    //SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 1);
-    //SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 1);
-    //SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 1);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     // create an OpenGL ES2 window and renderer
@@ -95,7 +93,8 @@ int main(int argc, char *argv[])
                 }
                 break;
 
-            default:break;
+            default:
+                break;
             }
         }
 

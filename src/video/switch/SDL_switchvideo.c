@@ -50,6 +50,7 @@ void SWITCH_DeleteDevice(SDL_VideoDevice *device)
         SDL_free(device->driverdata);
         device->driverdata = NULL;
     }
+
     SDL_free(device);
 }
 
@@ -167,6 +168,7 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
 
     /* Setup driver data for this window */
     window->driverdata = wdata;
+    window->flags |= SDL_WINDOW_FULLSCREEN;
 
     /* Window has been successfully created */
     return 0;
