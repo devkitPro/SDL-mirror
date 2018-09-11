@@ -61,8 +61,6 @@ SWITCH_GL_LoadLibrary(_THIS, const char *path)
         return 0;
     }
 
-    gladLoadGL();
-
     return 0;
 }
 
@@ -142,8 +140,6 @@ SWITCH_GL_CreateContext(_THIS, SDL_Window *window)
     printf("SWITCH_GL_CreateContext: eglMakeCurrent\n");
     EGLCHK(eglMakeCurrent(vdata->display, _this->gles_data->surface,
                           _this->gles_data->surface, _this->gles_data->context));
-
-    gladLoadGL();
 
     return _this->gles_data->context;
 }

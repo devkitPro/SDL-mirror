@@ -25,7 +25,6 @@
 
 #if SDL_VIDEO_DRIVER_SWITCH
 
-#include <glad/glad.h>
 #include "SDL_switchvideo.h"
 
 typedef struct SDL_PrivateGLESData
