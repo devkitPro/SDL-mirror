@@ -1379,7 +1379,7 @@ SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags)
     }
 
     /* Some platforms have OpenGL enabled by default */
-#if (SDL_VIDEO_OPENGL && __MACOSX__) || __IPHONEOS__ || __ANDROID__ || __NACL__
+#if (SDL_VIDEO_OPENGL && __MACOSX__) || __IPHONEOS__ || __ANDROID__ || __NACL__ || __SWITCH__
     if (!_this->is_dummy && !(flags & SDL_WINDOW_VULKAN)) {
         flags |= SDL_WINDOW_OPENGL;
     }

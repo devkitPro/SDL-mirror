@@ -10,8 +10,8 @@ set(CMAKE_CXX_COMPILER "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-g++")
 set(CMAKE_ASM_COMPILER "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-as")
 set(CMAKE_AR "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-gcc-ar" CACHE STRING "")
 set(CMAKE_RANLIB "${DEVKITPRO}/devkitA64/bin/aarch64-none-elf-gcc-ranlib" CACHE STRING "")
-set(CMAKE_C_FLAGS "-O2 -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIC -ftls-model=local-exec -I${DEVKITPRO}/libnx/include -I${DEVKITPRO}/portlibs/switch/include" CACHE STRING "C flags")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fpermissive -fno-rtti -fno-exceptions -std=gnu++11" CACHE STRING "C++ flags")
+set(CMAKE_C_FLAGS "-O2 -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -ffunction-sections -I${DEVKITPRO}/libnx/include -I${DEVKITPRO}/portlibs/switch/include" CACHE STRING "C flags")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -fno-exceptions" CACHE STRING "C++ flags")
 set(CMAKE_FIND_ROOT_PATH ${DEVKITPRO} ${DEVKITPRO}/devkitA64 ${DEVKITPRO}/libnx ${DEVKITPRO}/portlibs/switch)
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
@@ -39,6 +39,9 @@ set(SRC_DIRS
         src/power
         src/render
         src/render/software
+        src/render/opengl
+        src/render/opengles
+        src/render/opengles2
         src/stdlib
         src/thread
         src/thread/switch
@@ -63,12 +66,15 @@ target_compile_options(${PROJECT_NAME} PUBLIC -O3 -D__SWITCH__)
 # SDL2 test
 add_executable(${PROJECT_NAME}.elf test/testswitch.c)
 target_include_directories(${PROJECT_NAME}.elf PRIVATE include)
-#target_include_directories(${PROJECT_NAME}.elf PRIVATE ${DEVKITPRO}/portlibs/switch/include)
 target_compile_options(${PROJECT_NAME}.elf PRIVATE -O3 -D__SWITCH__)
 target_link_libraries(${PROJECT_NAME}.elf
         ${PROJECT_NAME}
-        #${DEVKITPRO}/portlibs/switch/lib/libSDL2.a
+        ${DEVKITPRO}/portlibs/switch/lib/libglad.a
+        ${DEVKITPRO}/portlibs/switch/lib/libEGL.a
+        ${DEVKITPRO}/portlibs/switch/lib/libglapi.a
+        ${DEVKITPRO}/portlibs/switch/lib/libdrm_nouveau.a
         ${DEVKITPRO}/libnx/lib/libnx.a
+        stdc++
         m
         )
 set_target_properties(${PROJECT_NAME}.elf PROPERTIES LINK_FLAGS "-specs=${DEVKITPRO}/libnx/switch.specs")
