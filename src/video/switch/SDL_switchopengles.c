@@ -18,33 +18,46 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "../../SDL_internal.h"
 
-#ifndef SDL_switchvideogl_h_
-#define SDL_switchvideogl_h_
+#include "../../SDL_internal.h"
+#include "SDL_log.h"
 
 #if SDL_VIDEO_DRIVER_SWITCH
 
+#include "SDL_switchopengles.h"
 #include "SDL_switchvideo.h"
 
-typedef struct SDL_PrivateGLESData
-{
-    EGLContext context;
-    EGLSurface surface;
-    uint32_t swap_interval;
-} SDL_PrivateGLESData;
+/* EGL implementation of SDL OpenGL support */
 
-extern void *SWITCH_GL_GetProcAddress(_THIS, const char *proc);
-extern int SWITCH_GL_MakeCurrent(_THIS, SDL_Window *window, SDL_GLContext context);
-extern int SWITCH_GL_SwapWindow(_THIS, SDL_Window *window);
-extern SDL_GLContext SWITCH_GL_CreateContext(_THIS, SDL_Window *window);
-extern void SWITCH_GL_DeleteContext(_THIS, SDL_GLContext context);
-extern int SWITCH_GL_LoadLibrary(_THIS, const char *path);
-extern void SWITCH_GL_UnloadLibrary(_THIS);
-extern int SWITCH_GL_SetSwapInterval(_THIS, int interval);
-extern int SWITCH_GL_GetSwapInterval(_THIS);
+void
+SWITCH_GLES_DefaultProfileConfig(_THIS, int *mask, int *major, int *minor)
+{
+    *mask = SDL_GL_CONTEXT_PROFILE_ES;
+    *major = 2;
+    *minor = 0;
+}
+
+int
+SWITCH_GLES_LoadLibrary(_THIS, const char *path)
+{
+    return SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
+}
+
+int
+SWITCH_GLES_SwapWindow(_THIS, SDL_Window *window)
+{
+    SDL_WindowData *wdata = ((SDL_WindowData *) window->driverdata);
+
+    if (!(_this->egl_data->eglSwapBuffers(_this->egl_data->egl_display, wdata->egl_surface))) {
+        return SDL_SetError("eglSwapBuffers failed.");
+    }
+
+    return 0;
+}
+
+SDL_EGL_CreateContext_impl(SWITCH)
+SDL_EGL_MakeCurrent_impl(SWITCH)
 
 #endif /* SDL_VIDEO_DRIVER_SWITCH */
-#endif /* SDL_switchvideogl_h_ */
 
 /* vi: set ts=4 sw=4 expandtab: */

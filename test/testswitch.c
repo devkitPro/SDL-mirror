@@ -33,12 +33,6 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // SDL_GL_CONTEXT_PROFILE_ES is enabled by default when using SDL_WINDOW_OPENGL,
-    // but forcing OpenGL ES version to 2.0 prevent an internal window creation/deletion cycle
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     // create an OpenGL ES2 window and renderer
@@ -50,7 +44,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // switch support OpenGLES 2 hardware renderer
+    // switch support OpenGL ES2 hardware renderer
     renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer) {
         printf("SDL_CreateRenderer: %s\n", SDL_GetError());
@@ -76,25 +70,25 @@ int main(int argc, char *argv[])
 
             switch (event.type) {
 
-            case SDL_JOYAXISMOTION:
-                printf("Joystick %d axis %d value: %d\n",
-                       event.jaxis.which,
-                       event.jaxis.axis, event.jaxis.value);
-                break;
+                case SDL_JOYAXISMOTION:
+                    printf("Joystick %d axis %d value: %d\n",
+                           event.jaxis.which,
+                           event.jaxis.axis, event.jaxis.value);
+                    break;
 
-            case SDL_JOYBUTTONDOWN:
-                printf("Joystick %d button %d down\n",
-                       event.jbutton.which, event.jbutton.button);
-                // seek for joystick #0 down (B)
-                // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L52
-                if (event.jbutton.which == 0 && event.jbutton.button == 1) {
-                    printf("exiting...\n");
-                    done = 1;
-                }
-                break;
+                case SDL_JOYBUTTONDOWN:
+                    printf("Joystick %d button %d down\n",
+                           event.jbutton.which, event.jbutton.button);
+                    // seek for joystick #0 down (B)
+                    // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L52
+                    if (event.jbutton.which == 0 && event.jbutton.button == 1) {
+                        printf("exiting...\n");
+                        done = 1;
+                    }
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
             }
         }
 

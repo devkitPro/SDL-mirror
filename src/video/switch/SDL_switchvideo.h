@@ -24,29 +24,45 @@
 
 #if SDL_VIDEO_DRIVER_SWITCH
 
-#include <glad/glad.h>
-
 #include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
 
+#include "SDL_egl.h"
+
 typedef struct SDL_VideoData
 {
-    SDL_bool egl_initialized;
-    EGLDisplay display;
+    uint32_t egl_refcount;
 } SDL_VideoData;
+
+typedef struct SDL_DisplayData
+{
+    EGLDisplay egl_display;
+} SDL_DisplayData;
 
 typedef struct SDL_WindowData
 {
-    SDL_bool uses_gles;
+    EGLSurface egl_surface;
 } SDL_WindowData;
 
-int SWITCH_Available(void);
 int SWITCH_VideoInit(_THIS);
 void SWITCH_VideoQuit(_THIS);
-void SWITCH_PumpEvents(_THIS);
-
+void SWITCH_GetDisplayModes(_THIS, SDL_VideoDisplay *display);
+int SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
 int SWITCH_CreateWindow(_THIS, SDL_Window *window);
+int SWITCH_CreateWindowFrom(_THIS, SDL_Window *window, const void *data);
+void SWITCH_SetWindowTitle(_THIS, SDL_Window *window);
+void SWITCH_SetWindowIcon(_THIS, SDL_Window *window, SDL_Surface *icon);
+void SWITCH_SetWindowPosition(_THIS, SDL_Window *window);
+void SWITCH_SetWindowSize(_THIS, SDL_Window *window);
+void SWITCH_ShowWindow(_THIS, SDL_Window *window);
+void SWITCH_HideWindow(_THIS, SDL_Window *window);
+void SWITCH_RaiseWindow(_THIS, SDL_Window *window);
+void SWITCH_MaximizeWindow(_THIS, SDL_Window *window);
+void SWITCH_MinimizeWindow(_THIS, SDL_Window *window);
+void SWITCH_RestoreWindow(_THIS, SDL_Window *window);
+void SWITCH_SetWindowGrab(_THIS, SDL_Window *window, SDL_bool grabbed);
 void SWITCH_DestroyWindow(_THIS, SDL_Window *window);
+void SWITCH_PumpEvents(_THIS);
 
 #endif /* SDL_VIDEO_DRIVER_SWITCH */
 #endif /* __SDL_SWITCHVIDEO_H__ */

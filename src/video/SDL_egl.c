@@ -221,13 +221,16 @@ SDL_EGL_GetProcAddress(_THIS, const char *proc)
         }
     }
 #endif
-    
+
+#if !defined(SDL_VIDEO_DRIVER_SWITCH)
     retval = SDL_LoadFunction(_this->egl_data->egl_dll_handle, proc);
     if (!retval && SDL_strlen(proc) <= 1022) {
         procname[0] = '_';
         SDL_strlcpy(procname + 1, proc, 1022);
         retval = SDL_LoadFunction(_this->egl_data->egl_dll_handle, procname);
     }
+#endif
+
     return retval;
 }
 
@@ -240,6 +243,7 @@ SDL_EGL_UnloadLibrary(_THIS)
             _this->egl_data->egl_display = NULL;
         }
 
+#if !defined(SDL_VIDEO_DRIVER_SWITCH)
         if (_this->egl_data->dll_handle) {
             SDL_UnloadObject(_this->egl_data->dll_handle);
             _this->egl_data->dll_handle = NULL;
@@ -248,7 +252,7 @@ SDL_EGL_UnloadLibrary(_THIS)
             SDL_UnloadObject(_this->egl_data->egl_dll_handle);
             _this->egl_data->egl_dll_handle = NULL;
         }
-        
+#endif
         SDL_free(_this->egl_data);
         _this->egl_data = NULL;
     }
@@ -504,6 +508,13 @@ SDL_EGL_ChooseConfig(_THIS)
         attribs[i++] = _this->gl_config.multisamplesamples;
     }
 
+#if defined(SDL_VIDEO_DRIVER_SWITCH)
+    if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) {
+        _this->egl_data->eglBindAPI(EGL_OPENGL_ES_API);
+    } else {
+        _this->egl_data->eglBindAPI(EGL_OPENGL_API);
+    }
+#else
     attribs[i++] = EGL_RENDERABLE_TYPE;
     if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) {
 #ifdef EGL_KHR_create_context
@@ -527,6 +538,7 @@ SDL_EGL_ChooseConfig(_THIS)
         attribs[i++] = EGL_SURFACE_TYPE;
         attribs[i++] = _this->egl_data->egl_surfacetype;
     }
+#endif
 
     attribs[i++] = EGL_NONE;
 
@@ -662,10 +674,14 @@ SDL_EGL_CreateContext(_THIS, EGLSurface egl_surface)
         _this->egl_data->eglBindAPI(EGL_OPENGL_API);
     }
 
+#if defined(SDL_VIDEO_DRIVER_SWITCH)
+    egl_context = _this->egl_data->eglCreateContext(_this->egl_data->egl_display,
+        _this->egl_data->egl_config, share_context, NULL);
+#else
     egl_context = _this->egl_data->eglCreateContext(_this->egl_data->egl_display,
                                       _this->egl_data->egl_config,
                                       share_context, attribs);
-
+#endif
     if (egl_context == EGL_NO_CONTEXT) {
         SDL_EGL_SetError("Could not create EGL context", "eglCreateContext");
         return NULL;
@@ -703,7 +719,9 @@ SDL_EGL_MakeCurrent(_THIS, EGLSurface egl_surface, SDL_GLContext context)
      * with a valid context and invalid surface, so we have to check for both here.
      */
     if (!egl_context || !egl_surface) {
+#if !defined(SDL_VIDEO_DRIVER_SWITCH)
          _this->egl_data->eglMakeCurrent(_this->egl_data->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+#endif
     } else {
         if (!_this->egl_data->eglMakeCurrent(_this->egl_data->egl_display,
             egl_surface, egl_surface, egl_context)) {

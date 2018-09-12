@@ -3917,6 +3917,7 @@ AC_HELP_STRING([--enable-render-d3d], [enable the Direct3D render driver [[defau
         if test x$enable_video = xyes; then
             SOURCES="$SOURCES $srcdir/src/video/switch/*.c"
             AC_DEFINE(SDL_VIDEO_DRIVER_SWITCH, 1, [ ])
+            AC_DEFINE(SDL_VIDEO_OPENGL_EGL, 1, [ ])
             AC_DEFINE(SDL_VIDEO_OPENGL, 1, [ ])
             AC_DEFINE(SDL_VIDEO_OPENGL_ES2, 1, [ ])
             AC_DEFINE(SDL_VIDEO_RENDER_OGL_ES2, 1, [ ])
