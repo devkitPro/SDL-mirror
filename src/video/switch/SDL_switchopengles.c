@@ -43,20 +43,22 @@ SWITCH_GLES_LoadLibrary(_THIS, const char *path)
     return SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
 }
 
-int
-SWITCH_GLES_SwapWindow(_THIS, SDL_Window *window)
-{
-    SDL_WindowData *wdata = ((SDL_WindowData *) window->driverdata);
-
-    if (!(_this->egl_data->eglSwapBuffers(_this->egl_data->egl_display, wdata->egl_surface))) {
-        return SDL_SetError("eglSwapBuffers failed.");
-    }
-
-    return 0;
-}
-
 SDL_EGL_CreateContext_impl(SWITCH)
 SDL_EGL_MakeCurrent_impl(SWITCH)
+SDL_EGL_SwapWindow_impl(SWITCH)
+
+// for SDL_egl.c compatibility
+void *
+SDL_LoadFunction(void *handle, const char *name)
+{
+    return NULL;
+}
+
+void
+SDL_UnloadObject(void *handle)
+{
+
+}
 
 #endif /* SDL_VIDEO_DRIVER_SWITCH */
 
