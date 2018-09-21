@@ -41,6 +41,7 @@ extern SDL_GLContext SWITCH_GLES_CreateContext(_THIS, SDL_Window *window);
 extern int SWITCH_GLES_SwapWindow(_THIS, SDL_Window *window);
 extern int SWITCH_GLES_MakeCurrent(_THIS, SDL_Window *window, SDL_GLContext context);
 extern void SWITCH_GLES_DefaultProfileConfig(_THIS, int *mask, int *major, int *minor);
+extern void SWITCH_GLES_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h);
 
 #endif /* SDL_VIDEO_DRIVER_SWITCH */
 #endif /* SDL_switchteopengles_h_ */

@@ -29,15 +29,15 @@
 
 #include "SDL_egl.h"
 
-typedef struct SDL_VideoData
-{
-    uint32_t egl_refcount;
-} SDL_VideoData;
-
 typedef struct SDL_DisplayData
 {
     EGLDisplay egl_display;
 } SDL_DisplayData;
+
+typedef struct SDL_DisplayModeData
+{
+    int padding;
+} SDL_DisplayModeData;
 
 typedef struct SDL_WindowData
 {

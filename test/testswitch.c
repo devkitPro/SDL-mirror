@@ -16,40 +16,99 @@
 #include <switch.h>
 #include "SDL2/SDL.h"
 
+static SDL_DisplayMode modes[5];
+
+static int mode_count = 0, current_mode = 0;
+
+void print_info(SDL_Window *window, SDL_Renderer *renderer)
+{
+    int w, h;
+    SDL_DisplayMode mode;
+
+    SDL_GetWindowSize(window, &w, &h);
+    SDL_Log("window size: %i x %i\n", w, h);
+    SDL_GetRendererOutputSize(renderer, &w, &h);
+    SDL_Log("renderer size: %i x %i\n", w, h);
+
+    SDL_GetCurrentDisplayMode(0, &mode);
+    SDL_Log("display mode: %i x %i @ %i bpp (%s)",
+            mode.w, mode.h,
+            SDL_BITSPERPIXEL(mode.format),
+            SDL_GetPixelFormatName(mode.format));
+}
+
+void change_mode(SDL_Window *window)
+{
+    current_mode++;
+    if (current_mode == mode_count) {
+        current_mode = 0;
+    }
+
+    SDL_SetWindowDisplayMode(window, &modes[current_mode]);
+}
+
+void draw_rects(SDL_Renderer *renderer, int x, int y)
+{
+    // R
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_Rect r = {x, y, 64, 64};
+    SDL_RenderFillRect(renderer, &r);
+
+    // G
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_Rect g = {x + 64, y, 64, 64};
+    SDL_RenderFillRect(renderer, &g);
+
+    // B
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+    SDL_Rect b = {x + 128, y, 64, 64};
+    SDL_RenderFillRect(renderer, &b);
+}
+
 int main(int argc, char *argv[])
 {
     SDL_Event event;
     SDL_Window *window;
     SDL_Renderer *renderer;
-    int done = 0, x = 0;
-
-    // redirect stdout to emulators
-    // consoleDebugInit(debugDevice_SVC);
-    // stdout = stderr;
+    int done = 0, x = 0, w, h;
 
     // mandatory at least on switch, else gfx is not properly closed
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
-        printf("SDL_Init: %s\n", SDL_GetError());
+        SDL_Log("SDL_Init: %s\n", SDL_GetError());
         return -1;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-    // create an OpenGL ES2 window and renderer
-    window = SDL_CreateWindow("switch_gles2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              1280, 800, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+    // create a window (OpenGL always enabled)
+    // available switch SDL2 video modes :
+    // 1920 x 1080 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888) (docked only)
+    // 1280 x 720 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
+    // 960 x 540 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
+    // 800 x 600 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
+    // 640 x 480 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
+    window = SDL_CreateWindow("sdl2_gles2", 0, 0, 640, 480, SDL_WINDOW_FULLSCREEN);
     if (!window) {
-        printf("SDL_CreateWindow: %s\n", SDL_GetError());
+        SDL_Log("SDL_CreateWindow: %s\n", SDL_GetError());
         SDL_Quit();
         return -1;
     }
 
-    // switch support OpenGL ES2 hardware renderer
+    // create a renderer (OpenGL ES2)
     renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer) {
-        printf("SDL_CreateRenderer: %s\n", SDL_GetError());
+        SDL_Log("SDL_CreateRenderer: %s\n", SDL_GetError());
         SDL_Quit();
         return -1;
+    }
+
+    // pint some info about display/window/renderer
+    print_info(window, renderer);
+
+    // list available display modes
+    mode_count = SDL_GetNumDisplayModes(0);
+    for (int i = 0; i < mode_count; i++) {
+        SDL_DisplayMode mode;
+        SDL_GetDisplayMode(0, i, &mode);
+        modes[i] = mode;
     }
 
     // open CONTROLLER_PLAYER_1 and CONTROLLER_PLAYER_2
@@ -58,7 +117,7 @@ int main(int argc, char *argv[])
     // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L45
     for (int i = 0; i < 2; i++) {
         if (SDL_JoystickOpen(i) == NULL) {
-            printf("SDL_JoystickOpen: %s\n", SDL_GetError());
+            SDL_Log("SDL_JoystickOpen: %s\n", SDL_GetError());
             SDL_Quit();
             return -1;
         }
@@ -71,18 +130,22 @@ int main(int argc, char *argv[])
             switch (event.type) {
 
                 case SDL_JOYAXISMOTION:
-                    printf("Joystick %d axis %d value: %d\n",
-                           event.jaxis.which,
-                           event.jaxis.axis, event.jaxis.value);
+                    SDL_Log("Joystick %d axis %d value: %d\n",
+                            event.jaxis.which,
+                            event.jaxis.axis, event.jaxis.value);
                     break;
 
                 case SDL_JOYBUTTONDOWN:
-                    printf("Joystick %d button %d down\n",
-                           event.jbutton.which, event.jbutton.button);
-                    // seek for joystick #0 down (B)
+                    SDL_Log("Joystick %d button %d down\n",
+                            event.jbutton.which, event.jbutton.button);
+                    // seek for joystick #0 down (A)
                     // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L52
+                    if (event.jbutton.which == 0 && event.jbutton.button == 0) {
+                        change_mode(window);
+                        print_info(window, renderer);
+                    }
+                    // seek for joystick #0 down (B)
                     if (event.jbutton.which == 0 && event.jbutton.button == 1) {
-                        printf("exiting...\n");
                         done = 1;
                     }
                     break;
@@ -92,38 +155,28 @@ int main(int argc, char *argv[])
             }
         }
 
-
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        // R
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_Rect r = {x, 0, 64, 64};
-        SDL_RenderFillRect(renderer, &r);
+        // Fill renderer bounds
+        SDL_SetRenderDrawColor(renderer, 111, 111, 111, 255);
+        SDL_GetRendererOutputSize(renderer, &w, &h);
+        SDL_Rect f = {0, 0, w, h};
+        SDL_RenderFillRect(renderer, &f);
 
-        // G
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-        SDL_Rect g = {x + 64, 0, 64, 64};
-        SDL_RenderFillRect(renderer, &g);
-
-        // B
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-        SDL_Rect b = {x + 128, 0, 64, 64};
-        SDL_RenderFillRect(renderer, &b);
+        draw_rects(renderer, x, 0);
+        draw_rects(renderer, x, h - 64);
 
         SDL_RenderPresent(renderer);
 
         x++;
-        if (x > 256) {
-            break;
+        if (x > w - 192) {
+            x = 0;
         }
     }
 
-    printf("SDL_DestroyRenderer...\n");
     SDL_DestroyRenderer(renderer);
-    printf("SDL_DestroyWindow...\n");
     SDL_DestroyWindow(window);
-    printf("SDL_Quit...\n");
     SDL_Quit();
 
     return 0;

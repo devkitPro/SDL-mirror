@@ -24,6 +24,7 @@
 
 #if SDL_VIDEO_DRIVER_SWITCH
 
+#include "SDL_video.h"
 #include "SDL_switchopengles.h"
 #include "SDL_switchvideo.h"
 
@@ -41,6 +42,15 @@ int
 SWITCH_GLES_LoadLibrary(_THIS, const char *path)
 {
     return SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
+}
+
+void
+SWITCH_GLES_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h)
+{
+    SDL_DisplayMode mode = {0, 0, 0, 0, 0};
+    SDL_GetCurrentDisplayMode(0, &mode);
+    *w = mode.w;
+    *h = mode.h;
 }
 
 SDL_EGL_CreateContext_impl(SWITCH)
