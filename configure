@@ -745,6 +745,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -923,6 +924,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1175,6 +1177,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1312,7 +1323,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1465,6 +1476,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -24623,19 +24635,33 @@ $as_echo "#define SDL_TIMER_UNIX 1" >>confdefs.h
         ;;
 	aarch64-none-elf*)
         ARCH=switch
-        SDL_CFLAGS="$SDL_CFLAGS -isystem ${DEVKITPRO}/libnx/include -I${DEVKITPRO}/portlibs/switch/include -D__SWITCH__=1 -march=armv8-a -mtune=cortex-a57 -mtp=soft -ftls-model=local-exec"
-        SDL_LIBS="-march=armv8-a  -fPIC -specs=${DEVKITPRO}/libnx/switch.specs -L${DEVKITPRO}/portlibs/switch/lib $SDL_LIBS  -L${DEVKITPRO}/libnx/lib -lnx"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -g -O2 $SDL_CFLAGS -fPIC"
+        SDL_CFLAGS="$SDL_CFLAGS -isystem ${DEVKITPRO}/libnx/include -I${DEVKITPRO}/portlibs/switch/include"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -ftls-model=local-exec -fPIC"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS $SDL_CFLAGS -g -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DSDL_VIDEO_STATIC_ANGLE"
+        EXTRA_LDFLAGS="-march=armv8-a -fPIE -L${DEVKITPRO}/libnx/lib -lEGL -lglapi -ldrm_nouveau -lnx"
         CheckDeclarationAfterStatement
 
         # Set up files for the video library
         if test x$enable_video = xyes; then
+            SOURCES="$SOURCES $srcdir/src/video/switch/*.c"
 
 $as_echo "#define SDL_VIDEO_DRIVER_SWITCH 1" >>confdefs.h
 
-           SOURCES="$SOURCES $srcdir/src/video/switch/*.c"
-           SUMMARY_video="${SUMMARY_video} switch"
-           have_video=yes
+
+$as_echo "#define SDL_VIDEO_OPENGL_EGL 1" >>confdefs.h
+
+
+$as_echo "#define SDL_VIDEO_OPENGL 1" >>confdefs.h
+
+
+$as_echo "#define SDL_VIDEO_OPENGL_ES2 1" >>confdefs.h
+
+
+$as_echo "#define SDL_VIDEO_RENDER_OGL_ES2 1" >>confdefs.h
+
+            SUMMARY_video="${SUMMARY_video} switch_opengles2"
+            have_video=yes
         fi
         # Set up files for the audio library
         if test x$enable_audio = xyes; then

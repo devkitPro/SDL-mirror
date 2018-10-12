@@ -57,19 +57,6 @@ SDL_EGL_CreateContext_impl(SWITCH)
 SDL_EGL_MakeCurrent_impl(SWITCH)
 SDL_EGL_SwapWindow_impl(SWITCH)
 
-// for SDL_egl.c compatibility
-void *
-SDL_LoadFunction(void *handle, const char *name)
-{
-    return NULL;
-}
-
-void
-SDL_UnloadObject(void *handle)
-{
-
-}
-
 #endif /* SDL_VIDEO_DRIVER_SWITCH */
 
 /* vi: set ts=4 sw=4 expandtab: */
