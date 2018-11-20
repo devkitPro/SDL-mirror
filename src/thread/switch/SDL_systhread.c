@@ -33,7 +33,7 @@
 
 #define STACK_SIZE 0x20000
 
-static void
+static int
 SDL_SYS_RunThread(void *data)
 {
     SDL_RunThread(data);
@@ -41,29 +41,9 @@ SDL_SYS_RunThread(void *data)
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
-    Result res;
-    u64 core_mask = 0;
-
-    res = svcGetInfo(&core_mask, 0, CUR_PROCESS_HANDLE, 0);
-    if (R_FAILED(res)) {
-        return SDL_SetError("svcGetInfo() failed: 0x%08X", res);
-    }
-
-    res = threadCreate(&thread->handle, SDL_SYS_RunThread, args, STACK_SIZE, 0x2C, -2);
-    if (R_FAILED(res)) {
-        return SDL_SetError("threadCreate() failed: 0x%08X", res);
-    }
-
-    res = svcSetThreadCoreMask(thread->handle.handle, -1, (u32) core_mask);
-    if (R_FAILED(res)) {
-        threadClose(&thread->handle);
-        return SDL_SetError("threadCreate() failed: 0x%08X", res);
-    }
-
-    res = threadStart(&thread->handle);
-    if (R_FAILED(res)) {
-        threadClose(&thread->handle);
-        return SDL_SetError("threadStart() failed: 0x%08X", res);
+    int res = thrd_create(&thread->handle, SDL_SYS_RunThread, args);
+    if(res != thrd_success) {
+        return SDL_SetError("SDL_SYS_CreateThread::thrd_create failed: %i", res);
     }
 
     return 0;
@@ -76,41 +56,28 @@ void SDL_SYS_SetupThread(const char *name)
 
 SDL_threadID SDL_ThreadID(void)
 {
-    u64 tid = 0;
-
-    svcGetThreadId(&tid, CUR_THREAD_HANDLE);
-
-    return (SDL_threadID) tid;
+    return (SDL_threadID) thrd_current();
 }
 
 void SDL_SYS_WaitThread(SDL_Thread *thread)
 {
-    if (thread && thread->handle.handle) {
-        threadWaitForExit(&thread->handle);
-        threadClose(&thread->handle);
+    if (thread) {
+        int res = thrd_join(thread->handle, NULL);
+        if(res != thrd_success) {
+            printf("SDL_SYS_WaitThread::thrd_join failed: %i\n", res);
+        }
     }
 }
 
 void SDL_SYS_DetachThread(SDL_Thread *thread)
 {
-    if (thread && thread->handle.handle) {
-        threadClose(&thread->handle);
-    }
+    printf("SDL_SYS_DetachThread: not needed\n");
 }
 
 int SDL_SYS_SetThreadPriority(SDL_ThreadPriority priority)
 {
-    u32 value = 0x2C;
 
-    if (priority == SDL_THREAD_PRIORITY_LOW) {
-        value = 0x2D;
-    }
-    else if (priority == SDL_THREAD_PRIORITY_HIGH) {
-        value = 0x1C;
-    }
-
-    svcSetThreadPriority(CUR_THREAD_HANDLE, value);
-
+    // switch use preemptive multi-threading
     return 0;
 }
 

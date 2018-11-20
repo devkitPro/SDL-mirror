@@ -20,5 +20,6 @@
 */
 
 #include <switch.h>
+#include <threads.h>
 
-typedef Thread SYS_ThreadHandle;
+typedef thrd_t SYS_ThreadHandle;
