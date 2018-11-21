@@ -22,14 +22,14 @@
 
 #if SDL_THREAD_SWITCH
 
-/* An implementation of mutexes using semaphores */
+/* An implementation of mutexes */
 
 #include "SDL_thread.h"
 #include "SDL_systhread_c.h"
 
 struct SDL_mutex
 {
-    RMutex mtx;
+    mtx_t mtx;
 };
 
 /* Create a mutex */
@@ -38,7 +38,7 @@ SDL_CreateMutex(void)
 {
     SDL_mutex *mutex = (SDL_mutex *) SDL_malloc(sizeof(*mutex));
     if (mutex) {
-        rmutexInit(&mutex->mtx);
+        mtx_init(&mutex->mtx, mtx_plain | mtx_recursive);
     }
     else {
         SDL_OutOfMemory();
@@ -52,11 +52,12 @@ void
 SDL_DestroyMutex(SDL_mutex *mutex)
 {
     if (mutex) {
+        mtx_destroy(&mutex->mtx);
         SDL_free(mutex);
     }
 }
 
-/* Lock the semaphore */
+/* Lock the mutex */
 int
 SDL_mutexP(SDL_mutex *mutex)
 {
@@ -64,7 +65,7 @@ SDL_mutexP(SDL_mutex *mutex)
         return SDL_SetError("Passed a NULL mutex");
     }
 
-    rmutexLock(&mutex->mtx);
+    mtx_lock(&mutex->mtx);
 
     return 0;
 }
@@ -77,7 +78,7 @@ SDL_mutexV(SDL_mutex *mutex)
         return SDL_SetError("Passed a NULL mutex");
     }
 
-    rmutexUnlock(&mutex->mtx);
+    mtx_unlock(&mutex->mtx);
 
     return 0;
 }

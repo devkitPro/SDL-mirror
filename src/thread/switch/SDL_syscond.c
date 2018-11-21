@@ -19,6 +19,7 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 #include <switch.h>
+#include <threads.h>
 #include "../../SDL_internal.h"
 
 #if SDL_THREAD_SWITCH
@@ -33,23 +34,26 @@
 
 struct SDL_cond
 {
-    CondVar var;
+    cnd_t cnd;
 };
 
 struct SDL_mutex
 {
-    RMutex mtx;
+    mtx_t mtx;
 };
 
 /* Create a condition variable */
 SDL_cond *
 SDL_CreateCond(void)
 {
-    SDL_cond *cond;
+    SDL_cond *cond = NULL;
 
     cond = (SDL_cond *) SDL_malloc(sizeof(SDL_cond));
     if (cond) {
-        condvarInit(&cond->var);
+        int res = cnd_init(&cond->cnd);
+        if (res != thrd_success) {
+            printf("SDL_CreateCond::cnd_init failed: %i\n", res);
+        }
     }
     else {
         SDL_OutOfMemory();
@@ -62,6 +66,7 @@ void
 SDL_DestroyCond(SDL_cond *cond)
 {
     if (cond) {
+        cnd_destroy(&cond->cnd);
         SDL_free(cond);
     }
 }
@@ -71,10 +76,13 @@ int
 SDL_CondSignal(SDL_cond *cond)
 {
     if (!cond) {
-        return SDL_SetError("Passed a NULL condition variable");
+        return SDL_SetError("Passed a NULL cond");
     }
 
-    condvarWakeOne(&cond->var);
+    int res = cnd_signal(&cond->cnd);
+    if (res != thrd_success) {
+        return SDL_SetError("SDL_CondSignal::cnd_signal failed: %i", res);
+    }
 
     return 0;
 }
@@ -84,10 +92,13 @@ int
 SDL_CondBroadcast(SDL_cond *cond)
 {
     if (!cond) {
-        return SDL_SetError("Passed a NULL condition variable");
+        return SDL_SetError("Passed a NULL cond");
     }
 
-    condvarWakeAll(&cond->var);
+    int res = cnd_broadcast(&cond->cnd);
+    if (res != thrd_success) {
+        return SDL_SetError("SDL_CondBroadcast::cnd_broadcast failed: %i", res);
+    }
 
     return 0;
 }
@@ -116,22 +127,17 @@ Thread B:
 int
 SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
 {
-    uint32_t mutex_state[2];
-
-    if (!cond) {
-        return SDL_SetError("Passed a NULL condition variable");
+    if (!cond || !mutex) {
+        return SDL_SetError("SDL_CondWaitTimeout: passed a NULL cond/mutex");
     }
 
-	// backup mutex state
-    mutex_state[0] = mutex->mtx.thread_tag;
-    mutex_state[1] = mutex->mtx.counter;
-    mutex->mtx.thread_tag = 0;
-    mutex->mtx.counter = 0;
-
-    condvarWaitTimeout(&cond->var, &mutex->mtx.lock, ms * 1000000);
-
-    mutex->mtx.thread_tag = mutex_state[0];
-    mutex->mtx.counter = mutex_state[1];
+    struct timespec ts;
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    int res = cnd_timedwait(&cond->cnd, &mutex->mtx, &ts);
+    if (res != thrd_success) {
+        return SDL_SetError("SDL_CondWaitTimeout::cnd_timedwait failed: %i", res);
+    }
 
     return 0;
 }
@@ -140,7 +146,16 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
 int
 SDL_CondWait(SDL_cond *cond, SDL_mutex *mutex)
 {
-    return SDL_CondWaitTimeout(cond, mutex, SDL_MUTEX_MAXWAIT);
+    if (!cond || !mutex) {
+        return SDL_SetError("SDL_CondWaitTimeout: passed a NULL cond/mutex");
+    }
+
+    int res = cnd_wait(&cond->cnd, &mutex->mtx);
+    if (res != thrd_success) {
+        return SDL_SetError("SDL_CondWait::cnd_wait failed: %i", res);
+    }
+
+    return 0;
 }
 
 #endif /* SDL_THREAD_SWITCH */

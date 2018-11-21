@@ -42,7 +42,7 @@ SDL_SYS_RunThread(void *data)
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
     int res = thrd_create(&thread->handle, SDL_SYS_RunThread, args);
-    if(res != thrd_success) {
+    if (res != thrd_success) {
         return SDL_SetError("SDL_SYS_CreateThread::thrd_create failed: %i", res);
     }
 
@@ -51,7 +51,7 @@ int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 
 void SDL_SYS_SetupThread(const char *name)
 {
-    /* Do nothing. */
+    printf("SDL_SYS_SetupThread: dummy\n");
 }
 
 SDL_threadID SDL_ThreadID(void)
@@ -63,7 +63,7 @@ void SDL_SYS_WaitThread(SDL_Thread *thread)
 {
     if (thread) {
         int res = thrd_join(thread->handle, NULL);
-        if(res != thrd_success) {
+        if (res != thrd_success) {
             printf("SDL_SYS_WaitThread::thrd_join failed: %i\n", res);
         }
     }
@@ -71,13 +71,13 @@ void SDL_SYS_WaitThread(SDL_Thread *thread)
 
 void SDL_SYS_DetachThread(SDL_Thread *thread)
 {
-    printf("SDL_SYS_DetachThread: not needed\n");
+    printf("SDL_SYS_DetachThread: dummy\n");
 }
 
 int SDL_SYS_SetThreadPriority(SDL_ThreadPriority priority)
 {
-
     // switch use preemptive multi-threading
+    printf("SDL_SYS_SetThreadPriority: dummy\n");
     return 0;
 }
 
