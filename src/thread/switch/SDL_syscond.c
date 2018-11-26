@@ -75,11 +75,13 @@ SDL_DestroyCond(SDL_cond *cond)
 int
 SDL_CondSignal(SDL_cond *cond)
 {
+    int res;
+
     if (!cond) {
         return SDL_SetError("Passed a NULL cond");
     }
 
-    int res = cnd_signal(&cond->cnd);
+    res = cnd_signal(&cond->cnd);
     if (res != thrd_success) {
         return SDL_SetError("SDL_CondSignal::cnd_signal failed: %i", res);
     }
@@ -91,11 +93,13 @@ SDL_CondSignal(SDL_cond *cond)
 int
 SDL_CondBroadcast(SDL_cond *cond)
 {
+    int res;
+
     if (!cond) {
         return SDL_SetError("Passed a NULL cond");
     }
 
-    int res = cnd_broadcast(&cond->cnd);
+    res = cnd_broadcast(&cond->cnd);
     if (res != thrd_success) {
         return SDL_SetError("SDL_CondBroadcast::cnd_broadcast failed: %i", res);
     }
@@ -127,14 +131,16 @@ Thread B:
 int
 SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
 {
+    struct timespec ts;
+    int res;
+
     if (!cond || !mutex) {
         return SDL_SetError("SDL_CondWaitTimeout: passed a NULL cond/mutex");
     }
 
-    struct timespec ts;
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = (ms % 1000) * 1000000;
-    int res = cnd_timedwait(&cond->cnd, &mutex->mtx, &ts);
+    res = cnd_timedwait(&cond->cnd, &mutex->mtx, &ts);
     if (res != thrd_success) {
         return SDL_SetError("SDL_CondWaitTimeout::cnd_timedwait failed: %i", res);
     }
@@ -146,11 +152,13 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
 int
 SDL_CondWait(SDL_cond *cond, SDL_mutex *mutex)
 {
+    int res;
+
     if (!cond || !mutex) {
         return SDL_SetError("SDL_CondWaitTimeout: passed a NULL cond/mutex");
     }
 
-    int res = cnd_wait(&cond->cnd, &mutex->mtx);
+    res = cnd_wait(&cond->cnd, &mutex->mtx);
     if (res != thrd_success) {
         return SDL_SetError("SDL_CondWait::cnd_wait failed: %i", res);
     }

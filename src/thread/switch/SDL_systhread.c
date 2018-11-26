@@ -37,6 +37,7 @@ static int
 SDL_SYS_RunThread(void *data)
 {
     SDL_RunThread(data);
+    return 0;
 }
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
