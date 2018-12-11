@@ -34,9 +34,15 @@
 #include "SDL_n3dsaudio.h"
 
 #include <3ds.h>
+#include <assert.h>
 
 //extern volatile bool app_pause;
 extern volatile bool app_exiting;
+
+static Handle wbufDoneEvent;
+static aptHookCookie aptCookie;
+
+static const u64 EventTimeout = 1000LL * 1000LL * 100LL;	// 100 ms
 
 /* The tag name used by N3DS audio */
 #define N3DSAUD_DRIVER_NAME         "n3ds"
@@ -54,6 +60,26 @@ static int N3DSAUD_Available(void)
 	return(1);
 }
 
+static inline void contextLock(_THIS)
+{
+	LightLock_Lock(&this->hidden->lock);
+}
+
+static inline void contextUnlock(_THIS)
+{
+	LightLock_Unlock(&this->hidden->lock);
+}
+
+static void N3DSAUD_LockAudio(_THIS)
+{
+	contextLock(this);
+}
+
+static void N3DSAUD_UnlockAudio(_THIS)
+{
+	contextUnlock(this);
+}
+
 static void N3DSAUD_DeleteDevice(SDL_AudioDevice *device)
 {
 	if ( device->hidden->mixbuf != NULL ) {
@@ -64,8 +90,11 @@ static void N3DSAUD_DeleteDevice(SDL_AudioDevice *device)
 		linearFree(device->hidden->waveBuf[0].data_vaddr);
 		device->hidden->waveBuf[0].data_vaddr = NULL;
 	}
+
 	ndspExit();
+
 	SDL_free(device->hidden);
+
 	SDL_free(device);
 }
 
@@ -95,7 +124,8 @@ static SDL_AudioDevice *N3DSAUD_CreateDevice(int devindex)
 	this->PlayAudio = N3DSAUD_PlayAudio;
 	this->GetAudioBuf = N3DSAUD_GetAudioBuf;
 	this->CloseAudio = N3DSAUD_CloseAudio;
-//    this->ThreadInit = N3DSAUD_ThreadInit;
+	this->LockAudio = N3DSAUD_LockAudio;
+	this->UnlockAudio = N3DSAUD_UnlockAudio;
 	this->free = N3DSAUD_DeleteDevice;
 
 	return this;
@@ -106,36 +136,88 @@ AudioBootStrap N3DSAUD_bootstrap = {
 	N3DSAUD_Available, N3DSAUD_CreateDevice
 };
 
-/* This function waits until it is possible to write a full sound buffer */
+
+static void aptCallback(APT_HookType hook, void* param)
+{
+	switch (hook)
+	{
+		case APTHOOK_ONEXIT:
+			app_exiting = true;
+			svcSignalEvent(wbufDoneEvent);
+			break;
+		default:
+			break;
+	}
+}
+
+/* called by ndsp thread on each audio frame */
+static void audioFrameFinished(void *context)
+{
+	SDL_AudioDevice *this = (SDL_AudioDevice *) context;
+
+	contextLock(this);
+	bool done = this->hidden->waveBuf[this->hidden->nextbuf].status == NDSP_WBUF_DONE;
+	contextUnlock(this);
+
+	if (done)
+	{
+		svcSignalEvent(wbufDoneEvent);
+	}
+}
+
+/* This function blocks until it is possible to write a full sound buffer */
 static void N3DSAUD_WaitAudio(_THIS)
 {
-		if (app_exiting) {
-			SDL_Delay(5); 
-		} else
-		while(this->hidden->waveBuf[this->hidden->nextbuf].status != NDSP_WBUF_DONE && !app_exiting){
-			SDL_Delay(5);//Give other thread 5ms of execution time.
+	bool not_done;
+	size_t wait_index;
+
+	contextLock(this);
+	wait_index = this->hidden->nextbuf;
+
+retry:
+			
+	not_done = this->hidden->waveBuf[wait_index].status != NDSP_WBUF_DONE;
+	contextUnlock(this);
+
+	if (not_done)
+	{
+		svcWaitSynchronization(wbufDoneEvent, EventTimeout);
+		
+		if (app_exiting)
+		{
+			return;
 		}
+
+		contextLock(this);
+		goto retry;
+	}
 }
 
 static void N3DSAUD_PlayAudio(_THIS)
 {
 	if (app_exiting) return;
 
+	contextLock(this);
+
 	size_t nextbuf = this->hidden->nextbuf;
 	size_t sampleLen = this->hidden->mixlen;
 
+	assert(this->hidden->waveBuf[nextbuf].status == NDSP_WBUF_DONE);
+
+	this->hidden->nextbuf = (nextbuf + 1) % NUM_BUFFERS;
+	contextUnlock(this);
+
 	if (this->hidden->format==NDSP_FORMAT_STEREO_PCM8 || this->hidden->format==NDSP_FORMAT_MONO_PCM8) {
-			memcpy(this->hidden->waveBuf[nextbuf].data_pcm8,this->hidden->mixbuf,sampleLen);
+		memcpy(this->hidden->waveBuf[nextbuf].data_pcm8,this->hidden->mixbuf,sampleLen);
 		DSP_FlushDataCache(this->hidden->waveBuf[nextbuf].data_pcm8,sampleLen);
 	} else {
 		memcpy(this->hidden->waveBuf[nextbuf].data_pcm16,this->hidden->mixbuf,sampleLen);
 		DSP_FlushDataCache(this->hidden->waveBuf[nextbuf].data_pcm16,sampleLen);
 	}
+
 	this->hidden->waveBuf[nextbuf].offset=0;
 	this->hidden->waveBuf[nextbuf].status=NDSP_WBUF_QUEUED;
 	ndspChnWaveBufAdd(0, &this->hidden->waveBuf[nextbuf]);
-
-	this->hidden->nextbuf = (nextbuf + 1) % NUM_BUFFERS;
 }
 
 static Uint8 *N3DSAUD_GetAudioBuf(_THIS)
@@ -145,6 +227,8 @@ static Uint8 *N3DSAUD_GetAudioBuf(_THIS)
 
 static void N3DSAUD_CloseAudio(_THIS)
 {
+	contextLock(this);
+
 	if ( this->hidden->mixbuf != NULL ) {
 		SDL_FreeAudioMem(this->hidden->mixbuf);
 		this->hidden->mixbuf = NULL;
@@ -153,14 +237,9 @@ static void N3DSAUD_CloseAudio(_THIS)
 		linearFree(this->hidden->waveBuf[0].data_vaddr);
 		this->hidden->waveBuf[0].data_vaddr = NULL;
 	}
-}
 
-/*
-static void N3DSAUD_ThreadInit(SDL_AudioDevice *thisdevice)
-{
-	;
+	contextUnlock(this);
 }
-*/
 
 static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 {
@@ -239,6 +318,8 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	this->hidden->channels = spec->channels;
 	this->hidden->samplerate = spec->freq;
 
+	LightLock_Init(&this->hidden->lock);
+
 	ndspChnWaveBufClear(0);
  	ndspChnReset(0);
 
@@ -263,6 +344,12 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	this->hidden->waveBuf[1].data_vaddr = temp + this->hidden->mixlen;
 	this->hidden->waveBuf[1].nsamples = this->hidden->mixlen / this->hidden->bytePerSample;
 	this->hidden->waveBuf[1].status = NDSP_WBUF_DONE;
+
+	/* Setup callback */
+	svcCreateEvent(&wbufDoneEvent, RESET_ONESHOT);
+	ndspSetCallback(audioFrameFinished, this);
+
+	aptHook(&aptCookie, aptCallback, NULL);
 
     // end 3ds DSP init
 

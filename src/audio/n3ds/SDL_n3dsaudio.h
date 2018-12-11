@@ -36,12 +36,13 @@ struct SDL_PrivateAudioData {
 	Uint8 *mixbuf;
 	Uint32 mixlen;
 	Uint32 format;
-    Uint32 samplerate;
+	Uint32 samplerate;
 	Uint32 channels;
-    Uint8  bytePerSample;
+	Uint8  bytePerSample;
 	Uint32 isSigned;
 	Uint32 nextbuf;
 	ndspWaveBuf waveBuf[NUM_BUFFERS];
+	LightLock lock;
 };
 
 #endif /* _SDL_n3dsaudio_h */
