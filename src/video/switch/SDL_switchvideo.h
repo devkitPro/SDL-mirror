@@ -24,6 +24,8 @@
 
 #if SDL_VIDEO_DRIVER_SWITCH
 
+#include <switch.h>
+
 #include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
 
@@ -31,16 +33,18 @@
 
 typedef struct SDL_DisplayData
 {
+    ViDisplay viDisplay;
     EGLDisplay egl_display;
 } SDL_DisplayData;
 
 typedef struct SDL_DisplayModeData
 {
-    int padding;
 } SDL_DisplayModeData;
 
 typedef struct SDL_WindowData
 {
+    ViLayer viLayer;
+    NWindow nWindow;
     EGLSurface egl_surface;
 } SDL_WindowData;
 

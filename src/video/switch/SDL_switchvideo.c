@@ -23,8 +23,6 @@
 
 #if SDL_VIDEO_DRIVER_SWITCH
 
-#include <switch.h>
-
 #include "../SDL_sysvideo.h"
 #include "../../render/SDL_sysrender.h"
 #include "../../events/SDL_keyboard_c.h"
@@ -34,6 +32,10 @@
 #include "SDL_switchvideo.h"
 #include "SDL_switchopengles.h"
 #include "SDL_switchtouch.h"
+
+#if 0
+#define printf(fmt, ...) (0)
+#endif
 
 static int
 SWITCH_Available(void)
@@ -52,6 +54,8 @@ SWITCH_Destroy(SDL_VideoDevice *device)
 static SDL_VideoDevice *
 SWITCH_CreateDevice(int devindex)
 {
+    printf("SWITCH_CreateDevice\n");
+
     SDL_VideoDevice *device;
 
     /* Initialize SDL_VideoDevice structure */
@@ -117,10 +121,13 @@ VideoBootStrap SWITCH_bootstrap = {
 int
 SWITCH_VideoInit(_THIS)
 {
+    printf("SWITCH_VideoInit\n");
+
     SDL_VideoDisplay display;
     SDL_DisplayMode current_mode;
     SDL_DisplayData *data;
     SDL_DisplayModeData *mdata;
+    Result rc;
 
     SDL_zero(current_mode);
     current_mode.w = 1280;
@@ -128,7 +135,6 @@ SWITCH_VideoInit(_THIS)
     current_mode.refresh_rate = 60;
     current_mode.format = SDL_PIXELFORMAT_RGBA8888;
     mdata = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
-    mdata->padding = 0;
     current_mode.driverdata = mdata;
 
     SDL_zero(display);
@@ -140,9 +146,23 @@ SWITCH_VideoInit(_THIS)
     if (data == NULL) {
         return SDL_OutOfMemory();
     }
-    data->egl_display = EGL_DEFAULT_DISPLAY;
-    display.driverdata = data;
 
+    data->egl_display = EGL_DEFAULT_DISPLAY;
+
+    // init vi
+    rc = viInitialize(ViServiceType_Default);
+    if (R_FAILED(rc)) {
+        return SDL_SetError("Could not initialize vi service: 0x%x", rc);
+    }
+
+    printf("viDisplay[%i]: %s, %i\n", (int) data->viDisplay.display_id, data->viDisplay.display_name, data->viDisplay.initialized);
+    rc = viOpenDefaultDisplay(&data->viDisplay);
+    if (R_FAILED(rc)) {
+        return SDL_SetError("Could not open default display: 0x%x", rc);
+    }
+    printf("viDisplay[%i]: %s, %i\n", (int) data->viDisplay.display_id, data->viDisplay.display_name, data->viDisplay.initialized);
+
+    display.driverdata = data;
     SDL_AddVideoDisplay(&display);
 
     // init touch
@@ -154,6 +174,8 @@ SWITCH_VideoInit(_THIS)
 void
 SWITCH_VideoQuit(_THIS)
 {
+    printf("SWITCH_VideoQuit\n");
+
     // exit touch
     SWITCH_QuitTouch();
 }
@@ -161,62 +183,20 @@ SWITCH_VideoQuit(_THIS)
 void
 SWITCH_GetDisplayModes(_THIS, SDL_VideoDisplay *display)
 {
-    SDL_DisplayMode mode;
-    SDL_DisplayModeData *data;
+    printf("SWITCH_GetDisplayModes\n");
 
-    // 1920x1080 (16/9) 16RGBA8888
-    if (appletGetOperationMode() == AppletOperationMode_Docked) {
-        SDL_zero(mode);
-        mode.w = 1920;
-        mode.h = 1080;
-        mode.refresh_rate = 60;
-        mode.format = SDL_PIXELFORMAT_RGBA8888;
-        data = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
-        data->padding = 0;
-        mode.driverdata = data;
-        SDL_AddDisplayMode(display, &mode);
-    }
-
-    // 1280x720 (16/9) RGBA8888
+    // 1920x1080 (16/9) RGBA8888
     SDL_AddDisplayMode(display, &display->current_mode);
-
-    // 960x540 (16/9) RGBA8888
-    SDL_zero(mode);
-    mode.w = 960;
-    mode.h = 540;
-    mode.refresh_rate = 60;
-    mode.format = SDL_PIXELFORMAT_RGBA8888;
-    data = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
-    data->padding = 0;
-    mode.driverdata = data;
-    SDL_AddDisplayMode(display, &mode);
-
-    // 800x600 (4/3) RGBA8888
-    SDL_zero(mode);
-    mode.w = 800;
-    mode.h = 600;
-    mode.refresh_rate = 60;
-    mode.format = SDL_PIXELFORMAT_RGBA8888;
-    data = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
-    data->padding = (int) ((600.0f * 1.7774f) - 800.0f) / 2;
-    mode.driverdata = data;
-    SDL_AddDisplayMode(display, &mode);
-
-    // 640x480 (4/3) RGBA8888
-    SDL_zero(mode);
-    mode.w = 640;
-    mode.h = 480;
-    mode.refresh_rate = 60;
-    mode.format = SDL_PIXELFORMAT_RGBA8888;
-    data = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
-    data->padding = (int) ((480.0f * 1.7774f) - 640.0f) / 2;
-    mode.driverdata = data;
-    SDL_AddDisplayMode(display, &mode);
 }
 
 int
 SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
+    printf("SWITCH_SetDisplayMode\n");
+
+    // TODO: do we need that? (we should probably only use a 1920x1080 display mode)
+    return -1;
+#if 0
     SDL_Renderer *renderer = SDL_GetRenderer(_this->windows);
     SDL_DisplayModeData *data = (SDL_DisplayModeData *) mode->driverdata;
 
@@ -233,13 +213,17 @@ SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
     }
 
     return 0;
+#endif
 }
 
 int
 SWITCH_CreateWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_CreateWindow\n");
+
+    SDL_DisplayData *ddata;
     SDL_WindowData *wdata;
-    //SDL_VideoDisplay *display;
+    Result rc;
 
     /* Allocate window internal data */
     wdata = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
@@ -250,11 +234,33 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
     window->flags |= SDL_WINDOW_FULLSCREEN;
 
     if (!_this->egl_data) {
-        return SDL_SetError("SWITCH_CreateWindow: EGL not initialized");
+        return SDL_SetError("EGL not initialized");
     }
-    wdata->egl_surface = SDL_EGL_CreateSurface(_this, (NativeWindowType) &wdata->egl_surface);
 
+    ddata = SDL_GetDisplayDriverData(0);
+
+    printf("viDisplay[%i]: %s, %i\n", (int) ddata->viDisplay.display_id, ddata->viDisplay.display_name, ddata->viDisplay.initialized);
+    rc = viCreateLayer(&ddata->viDisplay, &wdata->viLayer);
+    if (R_FAILED(rc)) {
+        return SDL_SetError("Could not create vi layer: 0x%x", rc);
+    }
+
+    rc = viSetLayerScalingMode(&wdata->viLayer, ViScalingMode_FitToLayer);
+    if (R_FAILED(rc)) {
+        viCloseLayer(&wdata->viLayer);
+        return SDL_SetError("Could not set vi scaling mode: 0x%x", rc);
+    }
+
+    rc = nwindowCreateFromLayer(&wdata->nWindow, &wdata->viLayer);
+    if (R_FAILED(rc)) {
+        viCloseLayer(&wdata->viLayer);
+        return SDL_SetError("Could not create NWindow from layer: 0x%x", rc);
+    }
+
+    wdata->egl_surface = SDL_EGL_CreateSurface(_this, (NativeWindowType) &wdata->nWindow);
     if (wdata->egl_surface == EGL_NO_SURFACE) {
+        nwindowClose(&wdata->nWindow);
+        viCloseLayer(&wdata->viLayer);
         return SDL_SetError("Could not create GLES window surface");
     }
 
@@ -272,12 +278,16 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
 void
 SWITCH_DestroyWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_DestroyWindow\n");
+
     SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
 
     if (data) {
         if (data->egl_surface != EGL_NO_SURFACE) {
             SDL_EGL_DestroySurface(_this, data->egl_surface);
         }
+        nwindowClose(&data->nWindow);
+        viCloseLayer(&data->viLayer);
         SDL_free(data);
         window->driverdata = NULL;
     }
@@ -299,39 +309,47 @@ SWITCH_SetWindowIcon(_THIS, SDL_Window *window, SDL_Surface *icon)
 void
 SWITCH_SetWindowPosition(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_SetWindowPosition\n");
 }
 void
 SWITCH_SetWindowSize(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_SetWindowSize\n");
 }
 void
 SWITCH_ShowWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_ShowWindow\n");
 }
 void
 SWITCH_HideWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_HideWindow\n");
 }
 void
 SWITCH_RaiseWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_RaiseWindow\n");
 }
 void
 SWITCH_MaximizeWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_MaximizeWindow\n");
 }
 void
 SWITCH_MinimizeWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_MinimizeWindow\n");
 }
 void
 SWITCH_RestoreWindow(_THIS, SDL_Window *window)
 {
+    printf("SWITCH_RestoreWindow\n");
 }
 void
 SWITCH_SetWindowGrab(_THIS, SDL_Window *window, SDL_bool grabbed)
 {
-
+    printf("SWITCH_SetWindowGrab\n");
 }
 
 void
