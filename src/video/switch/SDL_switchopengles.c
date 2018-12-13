@@ -28,16 +28,11 @@
 #include "SDL_switchopengles.h"
 #include "SDL_switchvideo.h"
 
-#if 0
-#define printf(fmt, ...) (0)
-#endif
-
 /* EGL implementation of SDL OpenGL support */
 
 void
 SWITCH_GLES_DefaultProfileConfig(_THIS, int *mask, int *major, int *minor)
 {
-    printf("SWITCH_GLES_DefaultProfileConfig\n");
     *mask = SDL_GL_CONTEXT_PROFILE_ES;
     *major = 2;
     *minor = 0;
@@ -46,7 +41,6 @@ SWITCH_GLES_DefaultProfileConfig(_THIS, int *mask, int *major, int *minor)
 int
 SWITCH_GLES_LoadLibrary(_THIS, const char *path)
 {
-    printf("SDL_EGL_LoadLibrary\n");
     return SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
 }
 

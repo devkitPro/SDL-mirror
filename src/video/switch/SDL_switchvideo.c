@@ -33,10 +33,6 @@
 #include "SDL_switchopengles.h"
 #include "SDL_switchtouch.h"
 
-#if 0
-#define printf(fmt, ...) (0)
-#endif
-
 static int
 SWITCH_Available(void)
 {
@@ -54,8 +50,6 @@ SWITCH_Destroy(SDL_VideoDevice *device)
 static SDL_VideoDevice *
 SWITCH_CreateDevice(int devindex)
 {
-    printf("SWITCH_CreateDevice\n");
-
     SDL_VideoDevice *device;
 
     /* Initialize SDL_VideoDevice structure */
@@ -121,8 +115,6 @@ VideoBootStrap SWITCH_bootstrap = {
 int
 SWITCH_VideoInit(_THIS)
 {
-    printf("SWITCH_VideoInit\n");
-
     SDL_VideoDisplay display;
     SDL_DisplayMode current_mode;
     SDL_DisplayData *data;
@@ -130,8 +122,8 @@ SWITCH_VideoInit(_THIS)
     Result rc;
 
     SDL_zero(current_mode);
-    current_mode.w = 1280;
-    current_mode.h = 720;
+    current_mode.w = 1920;
+    current_mode.h = 1080;
     current_mode.refresh_rate = 60;
     current_mode.format = SDL_PIXELFORMAT_RGBA8888;
     mdata = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
@@ -155,12 +147,10 @@ SWITCH_VideoInit(_THIS)
         return SDL_SetError("Could not initialize vi service: 0x%x", rc);
     }
 
-    printf("viDisplay[%i]: %s, %i\n", (int) data->viDisplay.display_id, data->viDisplay.display_name, data->viDisplay.initialized);
     rc = viOpenDefaultDisplay(&data->viDisplay);
     if (R_FAILED(rc)) {
         return SDL_SetError("Could not open default display: 0x%x", rc);
     }
-    printf("viDisplay[%i]: %s, %i\n", (int) data->viDisplay.display_id, data->viDisplay.display_name, data->viDisplay.initialized);
 
     display.driverdata = data;
     SDL_AddVideoDisplay(&display);
@@ -168,13 +158,17 @@ SWITCH_VideoInit(_THIS)
     // init touch
     SWITCH_InitTouch();
 
-    return 1;
+    return 0;
 }
 
 void
 SWITCH_VideoQuit(_THIS)
 {
-    printf("SWITCH_VideoQuit\n");
+    SDL_DisplayData *data = SDL_GetDisplayDriverData(0);
+    if (data) {
+        viCloseDisplay(&data->viDisplay);
+    }
+    viExit();
 
     // exit touch
     SWITCH_QuitTouch();
@@ -183,63 +177,37 @@ SWITCH_VideoQuit(_THIS)
 void
 SWITCH_GetDisplayModes(_THIS, SDL_VideoDisplay *display)
 {
-    printf("SWITCH_GetDisplayModes\n");
-
-    // 1920x1080 (16/9) RGBA8888
+    // 1920x1080 RGBA8888, default mode
     SDL_AddDisplayMode(display, &display->current_mode);
 }
 
 int
 SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
-    printf("SWITCH_SetDisplayMode\n");
-
-    // TODO: do we need that? (we should probably only use a 1920x1080 display mode)
-    return -1;
-#if 0
-    SDL_Renderer *renderer = SDL_GetRenderer(_this->windows);
-    SDL_DisplayModeData *data = (SDL_DisplayModeData *) mode->driverdata;
-
-    if (!data) {
-        return -1;
-    }
-
-    gfxConfigureResolution(mode->w + data->padding * 2, mode->h);
-    display->current_mode = *mode;
-    _this->windows->w = mode->w;
-    _this->windows->h = mode->h;
-    if (renderer) {
-        renderer->UpdateViewport(renderer);
-    }
-
+    printf("SWITCH_SetDisplayMode: %i x %i\n", mode->w, mode->h);
     return 0;
-#endif
 }
 
 int
 SWITCH_CreateWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_CreateWindow\n");
-
-    SDL_DisplayData *ddata;
-    SDL_WindowData *wdata;
     Result rc;
-
-    /* Allocate window internal data */
-    wdata = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
+    SDL_DisplayData *ddata = SDL_GetDisplayDriverData(0);
+    SDL_WindowData *wdata = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
     if (wdata == NULL) {
         return SDL_OutOfMemory();
     }
-
-    window->flags |= SDL_WINDOW_FULLSCREEN;
 
     if (!_this->egl_data) {
         return SDL_SetError("EGL not initialized");
     }
 
-    ddata = SDL_GetDisplayDriverData(0);
+    // TODO
+    // we don't want fullscreen to be able to use lower window resolution than 1920x1080
+    if (window->flags & SDL_WINDOW_FULLSCREEN) {
+    //    window->flags &= ~SDL_WINDOW_FULLSCREEN;
+    }
 
-    printf("viDisplay[%i]: %s, %i\n", (int) ddata->viDisplay.display_id, ddata->viDisplay.display_name, ddata->viDisplay.initialized);
     rc = viCreateLayer(&ddata->viDisplay, &wdata->viLayer);
     if (R_FAILED(rc)) {
         return SDL_SetError("Could not create vi layer: 0x%x", rc);
@@ -255,6 +223,20 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
     if (R_FAILED(rc)) {
         viCloseLayer(&wdata->viLayer);
         return SDL_SetError("Could not create NWindow from layer: 0x%x", rc);
+    }
+
+    rc = nwindowSetDimensions(&wdata->nWindow, 1920, 1080);
+    if (R_FAILED(rc)) {
+        nwindowClose(&wdata->nWindow);
+        viCloseLayer(&wdata->viLayer);
+        return SDL_SetError("Could not set NWindow dimensions: 0x%x", rc);
+    }
+
+    rc = nwindowSetCrop(&wdata->nWindow, 0, 0, window->w, window->h);
+    if (R_FAILED(rc)) {
+        nwindowClose(&wdata->nWindow);
+        viCloseLayer(&wdata->viLayer);
+        return SDL_SetError("Could not set NWindow crop: 0x%x", rc);
     }
 
     wdata->egl_surface = SDL_EGL_CreateSurface(_this, (NativeWindowType) &wdata->nWindow);
@@ -278,8 +260,6 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
 void
 SWITCH_DestroyWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_DestroyWindow\n");
-
     SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
 
     if (data) {
@@ -309,47 +289,41 @@ SWITCH_SetWindowIcon(_THIS, SDL_Window *window, SDL_Surface *icon)
 void
 SWITCH_SetWindowPosition(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_SetWindowPosition\n");
 }
 void
 SWITCH_SetWindowSize(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_SetWindowSize\n");
+    printf("SWITCH_SetWindowSize: %i x %i\n", window->w, window->h);
+    SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
+    nwindowSetCrop(&data->nWindow, 0, 0, window->w, window->h);
 }
 void
 SWITCH_ShowWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_ShowWindow\n");
 }
 void
 SWITCH_HideWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_HideWindow\n");
 }
 void
 SWITCH_RaiseWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_RaiseWindow\n");
 }
 void
 SWITCH_MaximizeWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_MaximizeWindow\n");
 }
 void
 SWITCH_MinimizeWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_MinimizeWindow\n");
 }
 void
 SWITCH_RestoreWindow(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_RestoreWindow\n");
 }
 void
 SWITCH_SetWindowGrab(_THIS, SDL_Window *window, SDL_bool grabbed)
 {
-    printf("SWITCH_SetWindowGrab\n");
 }
 
 void
