@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     SDL_Event event;
     SDL_Window *window;
     SDL_Renderer *renderer;
-    int done = 0, x = 0, w, h;
+    int done = 0, x = 0, w = 0, h = 0;
 
     // mandatory at least on switch, else gfx is not properly closed
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
@@ -78,14 +78,15 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // create a window (OpenGL always enabled)
-    // available switch SDL2 video modes :
-    // 1920 x 1080 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888) (docked only)
-    // 1280 x 720 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
-    // 960 x 540 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
-    // 800 x 600 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
-    // 640 x 480 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
-    window = SDL_CreateWindow("sdl2_gles2", 0, 0, 640, 480, SDL_WINDOW_FULLSCREEN);
+    /// create a window (OpenGL always enabled)
+    /// available switch SDL2 video modes :
+    /// 1920 x 1080 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
+    /// 1280 x 720 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
+    ///
+    /// SDL_SetWindowSize to change window size when SDL_WINDOW_FULLSCREEN is NOT used (preferably)
+    /// SDL_SetDisplayMode to change display size after SDL_CreateWindow called with SDL_WINDOW_FULLSCREEN
+    /// (this means window size won't change, you'll need to handle that, as any SDL2 app)
+    window = SDL_CreateWindow("sdl2_gles2", 0, 0, 1280, 720, 0);
     if (!window) {
         SDL_Log("SDL_CreateWindow: %s\n", SDL_GetError());
         SDL_Quit();
@@ -109,6 +110,10 @@ int main(int argc, char *argv[])
         SDL_DisplayMode mode;
         SDL_GetDisplayMode(0, i, &mode);
         modes[i] = mode;
+        SDL_Log("found display mode: %i x %i @ %i bpp (%s)",
+                mode.w, mode.h,
+                SDL_BITSPERPIXEL(mode.format),
+                SDL_GetPixelFormatName(mode.format));
     }
 
     // open CONTROLLER_PLAYER_1 and CONTROLLER_PLAYER_2
@@ -138,13 +143,25 @@ int main(int argc, char *argv[])
                 case SDL_JOYBUTTONDOWN:
                     SDL_Log("Joystick %d button %d down\n",
                             event.jbutton.which, event.jbutton.button);
-                    // seek for joystick #0 down (A)
                     // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L52
-                    if (event.jbutton.which == 0 && event.jbutton.button == 0) {
-                        change_mode(window);
-                        print_info(window, renderer);
+                    if (event.jbutton.which == 0) {
+                        if (event.jbutton.button == 0) {
+                            // joystick #0 down (A)
+                            change_mode(window);
+                            print_info(window, renderer);
+                        }
+                        else if (event.jbutton.button == 2) {
+                            // joystick #0 down (X)
+                            if (w == 1920) {
+                                SDL_SetWindowSize(window, 1280, 720);
+                            }
+                            else {
+                                SDL_SetWindowSize(window, 1920, 1080);
+                            }
+                            print_info(window, renderer);
+                        }
                     }
-                    // seek for joystick #0 down (B)
+                    // joystick #0 down (B)
                     if (event.jbutton.which == 0 && event.jbutton.button == 1) {
                         done = 1;
                     }
@@ -160,7 +177,7 @@ int main(int argc, char *argv[])
 
         // Fill renderer bounds
         SDL_SetRenderDrawColor(renderer, 111, 111, 111, 255);
-        SDL_GetRendererOutputSize(renderer, &w, &h);
+        SDL_GetWindowSize(window, &w, &h);
         SDL_Rect f = {0, 0, w, h};
         SDL_RenderFillRect(renderer, &f);
 

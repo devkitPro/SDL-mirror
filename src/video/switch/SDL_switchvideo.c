@@ -177,14 +177,44 @@ SWITCH_VideoQuit(_THIS)
 void
 SWITCH_GetDisplayModes(_THIS, SDL_VideoDisplay *display)
 {
+    SDL_DisplayMode mode;
+    SDL_DisplayModeData *data;
+
     // 1920x1080 RGBA8888, default mode
     SDL_AddDisplayMode(display, &display->current_mode);
+
+    // 1280x720 RGBA8888
+    SDL_zero(mode);
+    mode.w = 1280;
+    mode.h = 720;
+    mode.refresh_rate = 60;
+    mode.format = SDL_PIXELFORMAT_RGBA8888;
+    data = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
+    mode.driverdata = data;
+    SDL_AddDisplayMode(display, &mode);
 }
 
 int
 SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
-    printf("SWITCH_SetDisplayMode: %i x %i\n", mode->w, mode->h);
+    SDL_WindowData *data;
+    Result rc;
+
+    if (display->fullscreen_window) {
+        data = (SDL_WindowData *) display->fullscreen_window->driverdata;
+    }
+    else {
+        if (!SDL_GetFocusWindow()) {
+            return SDL_SetError("Could not get window focus");
+        }
+        data = (SDL_WindowData *) SDL_GetFocusWindow()->driverdata;
+    }
+
+    rc = nwindowSetCrop(&data->nWindow, 0, 0, mode->w, mode->h);
+    if (rc) {
+        return SDL_SetError("Could not set NWindow crop: 0x%x", rc);
+    }
+
     return 0;
 }
 
@@ -200,12 +230,6 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
 
     if (!_this->egl_data) {
         return SDL_SetError("EGL not initialized");
-    }
-
-    // TODO
-    // we don't want fullscreen to be able to use lower window resolution than 1920x1080
-    if (window->flags & SDL_WINDOW_FULLSCREEN) {
-    //    window->flags &= ~SDL_WINDOW_FULLSCREEN;
     }
 
     rc = viCreateLayer(&ddata->viDisplay, &wdata->viLayer);
@@ -293,7 +317,6 @@ SWITCH_SetWindowPosition(_THIS, SDL_Window *window)
 void
 SWITCH_SetWindowSize(_THIS, SDL_Window *window)
 {
-    printf("SWITCH_SetWindowSize: %i x %i\n", window->w, window->h);
     SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
     nwindowSetCrop(&data->nWindow, 0, 0, window->w, window->h);
 }

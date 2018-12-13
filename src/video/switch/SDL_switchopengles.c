@@ -47,10 +47,8 @@ SWITCH_GLES_LoadLibrary(_THIS, const char *path)
 void
 SWITCH_GLES_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h)
 {
-    SDL_DisplayMode mode = {0, 0, 0, 0, 0};
-    SDL_GetCurrentDisplayMode(0, &mode);
-    *w = mode.w;
-    *h = mode.h;
+    *w = 1920;
+    *h = 1080;
 }
 
 SDL_EGL_CreateContext_impl(SWITCH)
