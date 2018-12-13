@@ -29,10 +29,6 @@
 #include "../../video/SDL_blit.h"
 #include "SDL_shaders_gles2.h"
 
-#if SDL_VIDEO_DRIVER_SWITCH
-#include "../../video/switch/SDL_switchvideo.h"
-#endif
-
 /* !!! FIXME: Emscripten makes these into WebGL calls, and WebGL doesn't offer
    !!! FIXME:  client-side arrays (without an Emscripten compatibility hack,
    !!! FIXME:  at least), but the current VBO code here is dramatically
@@ -47,7 +43,7 @@
 #endif
 
 /* To prevent unnecessary window recreation,
- * these should match the defaults selected in SDL_GL_ResetAttributes 
+ * these should match the defaults selected in SDL_GL_ResetAttributes
  */
 #define RENDERER_CONTEXT_MAJOR 2
 #define RENDERER_CONTEXT_MINOR 0
@@ -455,18 +451,8 @@ GLES2_UpdateViewport(SDL_Renderer * renderer)
         int w, h;
 
         SDL_GL_GetDrawableSize(renderer->window, &w, &h);
-#if SDL_VIDEO_DRIVER_SWITCH
-        renderer->viewport.x =
-            ((SDL_DisplayModeData *) SDL_GetVideoDevice()->displays[0].current_mode.driverdata)->padding;
-        renderer->viewport.y =  SDL_GetVideoDevice()->displays[0].desktop_mode.h - h;
-        renderer->viewport.w = w;
-        renderer->viewport.h = h;
-        data->glViewport(renderer->viewport.x, renderer->viewport.y,
-                         renderer->viewport.w, renderer->viewport.h);
-#else
         data->glViewport(renderer->viewport.x, (h - renderer->viewport.y - renderer->viewport.h),
                          renderer->viewport.w, renderer->viewport.h);
-#endif
     }
 
     if (data->current_program) {
