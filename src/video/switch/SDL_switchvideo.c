@@ -263,7 +263,7 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
         return SDL_SetError("Could not set NWindow crop: 0x%x", rc);
     }
 
-    wdata->egl_surface = SDL_EGL_CreateSurface(_this, (NativeWindowType) &wdata->nWindow);
+    wdata->egl_surface = SDL_EGL_CreateSurface(_this, &wdata->nWindow);
     if (wdata->egl_surface == EGL_NO_SURFACE) {
         nwindowClose(&wdata->nWindow);
         viCloseLayer(&wdata->viLayer);
