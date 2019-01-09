@@ -141,7 +141,9 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_nsec += (long) (ms * 1E6);
     res = cnd_timedwait(&cond->cnd, &mutex->mtx, &ts);
-    if (res != thrd_success) {
+    if(res == thrd_timedout) {
+        return SDL_MUTEX_TIMEDOUT;
+    } else if (res != thrd_success) {
         return SDL_SetError("SDL_CondWaitTimeout::cnd_timedwait failed: %i", res);
     }
 
