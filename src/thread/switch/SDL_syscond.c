@@ -138,8 +138,8 @@ SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
         return SDL_SetError("SDL_CondWaitTimeout: passed a NULL cond/mutex");
     }
 
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_nsec += (long) (ms * 1E6);
     res = cnd_timedwait(&cond->cnd, &mutex->mtx, &ts);
     if (res != thrd_success) {
         return SDL_SetError("SDL_CondWaitTimeout::cnd_timedwait failed: %i", res);
