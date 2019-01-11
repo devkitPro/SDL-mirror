@@ -73,7 +73,7 @@ int SDL_SYS_SetThreadPriority(SDL_ThreadPriority priority)
     Result res;
 
     if (priority == SDL_THREAD_PRIORITY_HIGH) {
-        res = svcSetThreadPriority(CUR_THREAD_HANDLE, 0x1C);
+        res = svcSetThreadPriority(CUR_THREAD_HANDLE, 0x2B);
     }
     else {
         // 0x3B = preemptive threading
