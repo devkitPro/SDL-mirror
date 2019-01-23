@@ -30,9 +30,11 @@
 #include "SDL_switchkeyboard.h"
 #include "../../events/SDL_keyboard_c.h"
 
-Uint8 locks = 0;
-bool keystate[160] = { 0 };
-Uint8 switch_scancodes[160] = {
+#define NUM_SCANCODES_SWITCH 160
+
+uint8_t locks = 0;
+bool keystate[NUM_SCANCODES_SWITCH] = { 0 };
+uint8_t switch_scancodes[NUM_SCANCODES_SWITCH] = {
 	KBD_A,
 	KBD_B,
 	KBD_C,
@@ -207,11 +209,11 @@ SWITCH_PollKeyboard(void)
 	if (SDL_GetFocusWindow() == NULL)
 		return;
 
-	for (int i = 0; i < 160; i++) {
+	for (int i = 0; i < NUM_SCANCODES_SWITCH; i++) {
 
 		int keyCode = switch_scancodes[i];
 
-		if ((hidKeyboardDown(keyCode) || hidKeyboardHeld(keyCode)) && !keystate[i]) {
+		if (hidKeyboardHeld(keyCode) && !keystate[i]) {
 			switch (keyCode) {
 				case SDL_SCANCODE_NUMLOCKCLEAR:
 					if (!(locks & 0x1)) {
@@ -244,7 +246,7 @@ SWITCH_PollKeyboard(void)
 					SDL_SendKeyboardKey(SDL_PRESSED, keyCode);
 			}
 			keystate[i] = true;
-		} else if ((hidKeyboardUp(keyCode) || !hidKeyboardHeld(keyCode)) && keystate[i]) {
+		} else if (!hidKeyboardHeld(keyCode) && keystate[i]) {
 			switch (keyCode) {
 				case SDL_SCANCODE_CAPSLOCK:
 				case SDL_SCANCODE_NUMLOCKCLEAR:
@@ -256,6 +258,11 @@ SWITCH_PollKeyboard(void)
 			keystate[i] = false;
 		}
 	}
+}
+
+void
+SWITCH_QuitKeyboard(void)
+{
 }
 
 #endif /* SDL_VIDEO_DRIVER_SWITCH */

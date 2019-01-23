@@ -176,6 +176,12 @@ SWITCH_VideoQuit(_THIS)
 
     // exit touch
     SWITCH_QuitTouch();
+    
+    //exit keyboard
+    SWITCH_QuitKeyboard();
+    
+    //exit mouse
+    SWITCH_QuitMouse();
 }
 
 void

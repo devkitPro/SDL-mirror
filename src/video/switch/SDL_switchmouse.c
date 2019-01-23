@@ -31,7 +31,7 @@
 #include "SDL_switchmouse_c.h"
 #include "../../events/SDL_mouse_c.h"
 
-static Uint64 prev_buttons = 0;
+static uint64_t prev_buttons = 0;
 static int prev_x = 0;
 static int prev_y = 0;
 
@@ -44,8 +44,8 @@ void
 SWITCH_PollMouse(void)
 {
 	SDL_Window *window = SDL_GetFocusWindow();
-	Uint64 buttons;
-	Uint64 changed_buttons;
+	uint64_t buttons;
+	uint64_t changed_buttons;
 	MousePosition mouse_pos;
 	int x,y;
 
@@ -53,7 +53,7 @@ SWITCH_PollMouse(void)
 	if (window == NULL)
 		return;
 
-	buttons = hidMouseButtonsHeld() | hidMouseButtonsDown();
+	buttons = hidMouseButtonsHeld();
 	changed_buttons = buttons ^ prev_buttons;
 
 	if (changed_buttons & MOUSE_LEFT) {
@@ -89,6 +89,11 @@ SWITCH_PollMouse(void)
 		prev_x = x;
 		prev_y = y;
 	}
+}
+
+void 
+SWITCH_QuitMouse(void)
+{
 }
 
 #endif /* SDL_VIDEO_DRIVER_SWITCH */

@@ -27,6 +27,7 @@
 /* Keyboard functions */
 extern void SWITCH_InitKeyboard(void);
 extern void SWITCH_PollKeyboard(void);
+extern void SWITCH_QuitKeyboard(void);
 
 #endif /* _SDL_switchkeyboard_h */
 

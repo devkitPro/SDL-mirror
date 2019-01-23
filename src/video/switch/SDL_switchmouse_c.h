@@ -27,6 +27,7 @@
 /* mouse functions */
 extern void SWITCH_InitMouse(void);
 extern void SWITCH_PollMouse(void);
+extern void SWITCH_QuitMouse(void);
 
 #endif /* _SDL_switchmouse_h */
 
