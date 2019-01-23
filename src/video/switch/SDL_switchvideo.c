@@ -159,7 +159,9 @@ SWITCH_VideoInit(_THIS)
 
     // init touch
     SWITCH_InitTouch();
+    //init keyboard
     SWITCH_InitKeyboard();
+    //init mouse
     SWITCH_InitMouse();
 
     return 0;
@@ -176,10 +178,8 @@ SWITCH_VideoQuit(_THIS)
 
     // exit touch
     SWITCH_QuitTouch();
-    
     //exit keyboard
     SWITCH_QuitKeyboard();
-    
     //exit mouse
     SWITCH_QuitMouse();
 }
