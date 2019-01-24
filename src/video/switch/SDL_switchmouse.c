@@ -78,8 +78,9 @@ SWITCH_PollMouse(void)
 	prev_buttons = buttons;
 	
 	hidMouseRead(&mouse_pos);
-	x = (int) mouse_pos.x;
-	y = (int) mouse_pos.y;
+	// hidMouseRead coordinates are clamped to 720p, but max resolution is 1080p
+	x = (mouse_pos.x * 1920) / 1280;
+	y = (mouse_pos.y * 1080) / 720;
 	if (x != prev_x || y != prev_y)
 	{
 		int dx, dy;
