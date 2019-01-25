@@ -24,6 +24,7 @@
 
 #include <switch.h>
 
+#include "SDL_timer.h"
 #include "SDL_events.h"
 #include "SDL_log.h"
 #include "SDL_mouse.h"
@@ -32,8 +33,8 @@
 #include "../../events/SDL_mouse_c.h"
 
 static uint64_t prev_buttons = 0;
-static int prev_x = 0;
-static int prev_y = 0;
+static uint64_t last_timestamp = 0;
+const uint64_t mouse_read_interval = 15; // in ms
 
 void 
 SWITCH_InitMouse(void)
@@ -47,7 +48,8 @@ SWITCH_PollMouse(void)
 	uint64_t buttons;
 	uint64_t changed_buttons;
 	MousePosition mouse_pos;
-	int x,y;
+	uint64_t timestamp;
+	int dx, dy;
 
 	// We skip polling mouse if no window is created
 	if (window == NULL)
@@ -76,19 +78,20 @@ SWITCH_PollMouse(void)
 	}
 
 	prev_buttons = buttons;
-	
-	hidMouseRead(&mouse_pos);
-	// hidMouseRead coordinates are clamped to 720p, but max resolution is 1080p
-	x = (mouse_pos.x * 1920) / 1280;
-	y = (mouse_pos.y * 1080) / 720;
-	if (x != prev_x || y != prev_y)
-	{
-		int dx, dy;
-		dx = x - prev_x;
-		dy = y - prev_y;
-		SDL_SendMouseMotion(window, 0, 1, dx, dy);
-		prev_x = x;
-		prev_y = y;
+
+	timestamp = SDL_GetTicks();
+
+	if (SDL_TICKS_PASSED(timestamp, last_timestamp + mouse_read_interval)) {
+		hidMouseRead(&mouse_pos);
+		// if hidMouseRead is called once per frame, a factor two on the velocities
+		// results in approximately the same mouse motion as reported by mouse_pos.x and mouse_pos.y
+		// but without the clamping to 1280 x 720
+		dx = mouse_pos.velocityX * 2;
+		dy = mouse_pos.velocityY * 2;
+		if (dx || dy) {
+			SDL_SendMouseMotion(window, 0, 1, dx, dy);
+		}
+		last_timestamp = timestamp;
 	}
 }
 
