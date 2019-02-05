@@ -32,9 +32,9 @@
 
 #define NUM_SCANCODES_SWITCH 160
 
-uint8_t locks = 0;
-bool keystate[NUM_SCANCODES_SWITCH] = { 0 };
-uint8_t switch_scancodes[NUM_SCANCODES_SWITCH] = {
+static uint8_t locks = 0;
+static bool keystate[NUM_SCANCODES_SWITCH] = { 0 };
+static uint8_t switch_scancodes[NUM_SCANCODES_SWITCH] = {
 	KBD_A,
 	KBD_B,
 	KBD_C,
