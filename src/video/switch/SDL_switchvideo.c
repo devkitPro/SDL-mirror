@@ -97,7 +97,6 @@ SWITCH_CreateDevice(int devindex)
     device->GL_SwapWindow = SWITCH_GLES_SwapWindow;
     device->GL_DeleteContext = SWITCH_GLES_DeleteContext;
     device->GL_DefaultProfileConfig = SWITCH_GLES_DefaultProfileConfig;
-    device->GL_GetDrawableSize = SWITCH_GLES_GetDrawableSize;
 
     device->PumpEvents = SWITCH_PumpEvents;
 
@@ -220,7 +219,7 @@ SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
         data = (SDL_WindowData *) SDL_GetFocusWindow()->driverdata;
     }
 
-    rc = nwindowSetCrop(&data->nWindow, 0, 0, mode->w, mode->h);
+    rc = nwindowSetCrop(&data->nWindow, 0, 1080 - mode->h, mode->w, 1080);
     if (rc) {
         return SDL_SetError("Could not set NWindow crop: 0x%x", rc);
     }
@@ -266,7 +265,7 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
         return SDL_SetError("Could not set NWindow dimensions: 0x%x", rc);
     }
 
-    rc = nwindowSetCrop(&wdata->nWindow, 0, 0, window->w, window->h);
+    rc = nwindowSetCrop(&wdata->nWindow, 0, 1080 - window->h, window->w, 1080);
     if (R_FAILED(rc)) {
         nwindowClose(&wdata->nWindow);
         viCloseLayer(&wdata->viLayer);
@@ -328,7 +327,7 @@ void
 SWITCH_SetWindowSize(_THIS, SDL_Window *window)
 {
     SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
-    nwindowSetCrop(&data->nWindow, 0, 0, window->w, window->h);
+    nwindowSetCrop(&data->nWindow, 0, 1080 - window->h, window->w, 1080);
 }
 void
 SWITCH_ShowWindow(_THIS, SDL_Window *window)
