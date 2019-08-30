@@ -28,7 +28,6 @@
 
 #include <3ds.h>
 
-
 /* Hidden "this" pointer for the video functions */
 #define _THIS	SDL_VideoDevice *this
 
@@ -36,17 +35,18 @@
 
 struct SDL_PrivateVideoData {
 //GPU drawing specific
-	int x1,y1,w1,h1; // drawing window for top screen          width and height of top screen part of the video buffer 
-	int x2,y2,w2,h2; //drawing window for bottom screen  and height of bottom part of the video buffer
+	int x1,y1,w1,h1; // drawing window for top screen; width and height of top screen part of the video buffer 
+	int x2,y2,w2,h2; // drawing window for bottom screen; width and height of bottom part of the video buffer
 	float l1,r1,t1,b1; // GPU source window for the top part of the video buffer
 	float l2,r2,t2,b2; // GPU source window for the bottom part of the video buffer
 	float scalex,scaley; // scaling factors
 	float scalex2,scaley2; // scaling factors
 
 // framebuffer data
-    int w, h; // width and height of the video buffer
-    void *buffer;
+	int w, h; // width and height of the video buffer
+	void *buffer;
 	Uint8 *palettedbuffer;
+	Uint32 palette[256];
 	GSPGPU_FramebufferFormats mode;
 	unsigned int flags; // backup of create device flags
 	unsigned int screens; // SDL_TOPSCR, SDL_BOTTOMSCR, SDL_DUALSCR
