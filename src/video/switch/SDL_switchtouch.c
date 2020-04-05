@@ -49,7 +49,7 @@ TouchState touchState_old;
 void
 SWITCH_InitTouch(void)
 {
-    SDL_AddTouch((SDL_TouchID) 0, "Switch");
+    SDL_AddTouch((SDL_TouchID) 0, SDL_TOUCH_DEVICE_DIRECT, "Switch");
 }
 
 void

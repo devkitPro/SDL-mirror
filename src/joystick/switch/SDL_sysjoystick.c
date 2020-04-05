@@ -43,29 +43,29 @@ typedef struct JoystickState
 static JoystickState pad[JOYSTICK_COUNT];
 
 static HidControllerID pad_id[JOYSTICK_COUNT] = {
-    CONTROLLER_P1_AUTO, CONTROLLER_PLAYER_2,
-    CONTROLLER_PLAYER_3, CONTROLLER_PLAYER_4,
-    CONTROLLER_PLAYER_5, CONTROLLER_PLAYER_6,
-    CONTROLLER_PLAYER_7, CONTROLLER_PLAYER_8
+        CONTROLLER_P1_AUTO, CONTROLLER_PLAYER_2,
+        CONTROLLER_PLAYER_3, CONTROLLER_PLAYER_4,
+        CONTROLLER_PLAYER_5, CONTROLLER_PLAYER_6,
+        CONTROLLER_PLAYER_7, CONTROLLER_PLAYER_8
 };
 
 static const HidControllerKeys pad_mapping[] = {
-    KEY_A, KEY_B, KEY_X, KEY_Y,
-    KEY_LSTICK, KEY_RSTICK,
-    KEY_L, KEY_R,
-    KEY_ZL, KEY_ZR,
-    KEY_PLUS, KEY_MINUS,
-    KEY_DLEFT, KEY_DUP, KEY_DRIGHT, KEY_DDOWN,
-    KEY_LSTICK_LEFT, KEY_LSTICK_UP, KEY_LSTICK_RIGHT, KEY_LSTICK_DOWN,
-    KEY_RSTICK_LEFT, KEY_RSTICK_UP, KEY_RSTICK_RIGHT, KEY_RSTICK_DOWN,
-    KEY_SL_LEFT, KEY_SR_LEFT, KEY_SL_RIGHT, KEY_SR_RIGHT
+        KEY_A, KEY_B, KEY_X, KEY_Y,
+        KEY_LSTICK, KEY_RSTICK,
+        KEY_L, KEY_R,
+        KEY_ZL, KEY_ZR,
+        KEY_PLUS, KEY_MINUS,
+        KEY_DLEFT, KEY_DUP, KEY_DRIGHT, KEY_DDOWN,
+        KEY_LSTICK_LEFT, KEY_LSTICK_UP, KEY_LSTICK_RIGHT, KEY_LSTICK_DOWN,
+        KEY_RSTICK_LEFT, KEY_RSTICK_UP, KEY_RSTICK_RIGHT, KEY_RSTICK_DOWN,
+        KEY_SL_LEFT, KEY_SR_LEFT, KEY_SL_RIGHT, KEY_SR_RIGHT
 };
 
 /* Function to scan the system for joysticks.
  * It should return 0, or -1 on an unrecoverable fatal error.
  */
-int
-SDL_SYS_JoystickInit(void)
+static int
+SWITCH_JoystickInit(void)
 {
     for (int i = 0; i < JOYSTICK_COUNT; i++) {
         pad[i].id = pad_id[i];
@@ -74,26 +74,49 @@ SDL_SYS_JoystickInit(void)
     return JOYSTICK_COUNT;
 }
 
-int
-SDL_SYS_NumJoysticks(void)
+static int
+SWITCH_JoystickGetCount(void)
 {
     return JOYSTICK_COUNT;
 }
 
-void
-SDL_SYS_JoystickDetect(void)
+static void
+SWITCH_JoystickDetect(void)
 {
 }
 
 /* Function to get the device-dependent name of a joystick */
-const char *
-SDL_SYS_JoystickNameForDeviceIndex(int device_index)
+static const char *
+SWITCH_JoystickGetDeviceName(int device_index)
 {
     return "Switch Controller";
 }
 
+static int
+SWITCH_JoystickGetDevicePlayerIndex(int device_index)
+{
+    return -1;
+}
+
+static void
+SWITCH_JoystickSetDevicePlayerIndex(int device_index, int player_index)
+{
+}
+
+static SDL_JoystickGUID
+SWITCH_JoystickGetDeviceGUID(int device_index)
+{
+    SDL_JoystickGUID guid;
+    /* the GUID is just the first 16 chars of the name for now */
+    const char *name = SWITCH_JoystickGetDeviceName(device_index);
+    SDL_zero(guid);
+    SDL_memcpy(&guid, name, SDL_min(sizeof(guid), SDL_strlen(name)));
+    return guid;
+}
+
 /* Function to perform the mapping from device index to the instance id for this index */
-SDL_JoystickID SDL_SYS_GetInstanceIdOfDeviceIndex(int device_index)
+static SDL_JoystickID
+SWITCH_JoystickGetDeviceInstanceID(int device_index)
 {
     return device_index;
 }
@@ -103,8 +126,8 @@ SDL_JoystickID SDL_SYS_GetInstanceIdOfDeviceIndex(int device_index)
    This should fill the nbuttons and naxes fields of the joystick structure.
    It returns 0, or -1 if there is an error.
  */
-int
-SDL_SYS_JoystickOpen(SDL_Joystick *joystick, int device_index)
+static int
+SWITCH_JoystickOpen(SDL_Joystick *joystick, int device_index)
 {
     joystick->nbuttons = sizeof(pad_mapping) / sizeof(*pad_mapping);
     joystick->naxes = 4;
@@ -114,10 +137,11 @@ SDL_SYS_JoystickOpen(SDL_Joystick *joystick, int device_index)
     return 0;
 }
 
-/* Function to determine if this joystick is attached to the system right now */
-SDL_bool SDL_SYS_JoystickAttached(SDL_Joystick *joystick)
+static int
+SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble, Uint32 duration_ms)
 {
-    return SDL_TRUE;
+    // TODO
+    return SDL_Unsupported();
 }
 
 /* Function to update the state of a joystick - called as a device poll.
@@ -125,8 +149,8 @@ SDL_bool SDL_SYS_JoystickAttached(SDL_Joystick *joystick)
  * but instead should call SDL_PrivateJoystick*() to deliver events
  * and update joystick device state.
  */
-void
-SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
+static void
+SWITCH_JoystickUpdate(SDL_Joystick *joystick)
 {
     u64 changed;
     static JoystickState pad_old[JOYSTICK_COUNT];
@@ -165,44 +189,41 @@ SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
         for (int i = 0; i < joystick->nbuttons; i++) {
             if (changed & pad_mapping[i]) {
                 SDL_PrivateJoystickButton(
-                    joystick, (Uint8) i,
-                    (Uint8) ((pad[index].buttons & pad_mapping[i]) ? SDL_PRESSED : SDL_RELEASED));
+                        joystick, (Uint8) i,
+                        (Uint8) ((pad[index].buttons & pad_mapping[i]) ? SDL_PRESSED : SDL_RELEASED));
             }
         }
     }
 }
 
 /* Function to close a joystick after use */
-void
-SDL_SYS_JoystickClose(SDL_Joystick *joystick)
+static void
+SWITCH_JoystickClose(SDL_Joystick *joystick)
 {
 }
 
 /* Function to perform any system-specific joystick related cleanup */
-void
-SDL_SYS_JoystickQuit(void)
+static void
+SWITCH_JoystickQuit(void)
 {
 }
 
-SDL_JoystickGUID SDL_SYS_JoystickGetDeviceGUID(int device_index)
+SDL_JoystickDriver SDL_SWITCH_JoystickDriver =
 {
-    SDL_JoystickGUID guid;
-    /* the GUID is just the first 16 chars of the name for now */
-    const char *name = SDL_SYS_JoystickNameForDeviceIndex(device_index);
-    SDL_zero(guid);
-    SDL_memcpy(&guid, name, SDL_min(sizeof(guid), SDL_strlen(name)));
-    return guid;
-}
-
-SDL_JoystickGUID SDL_SYS_JoystickGetGUID(SDL_Joystick *joystick)
-{
-    SDL_JoystickGUID guid;
-    /* the GUID is just the first 16 chars of the name for now */
-    const char *name = joystick->name;
-    SDL_zero(guid);
-    SDL_memcpy(&guid, name, SDL_min(sizeof(guid), SDL_strlen(name)));
-    return guid;
-}
+    SWITCH_JoystickInit,
+    SWITCH_JoystickGetCount,
+    SWITCH_JoystickDetect,
+    SWITCH_JoystickGetDeviceName,
+    SWITCH_JoystickGetDevicePlayerIndex,
+    //SWITCH_JoystickSetDevicePlayerIndex,
+    SWITCH_JoystickGetDeviceGUID,
+    SWITCH_JoystickGetDeviceInstanceID,
+    SWITCH_JoystickOpen,
+    SWITCH_JoystickRumble,
+    SWITCH_JoystickUpdate,
+    SWITCH_JoystickClose,
+    SWITCH_JoystickQuit,
+};
 
 #endif /* SDL_JOYSTICK_SWITCH */
 

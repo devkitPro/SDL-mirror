@@ -48,10 +48,12 @@ set(SRC_DIRS
         src/thread
         src/thread/switch
         src/timer
-        src/timer/switch
+        src/timer/unix
         src/video
         src/video/yuv2rgb
         src/video/switch
+        src/sensor
+        src/sensor/dummy
         )
 
 set(SRC_FILES )
