@@ -25229,6 +25229,7 @@ $as_echo "#define SDL_TIMER_UNIX 1" >>confdefs.h
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DSDL_VIDEO_STATIC_ANGLE"
         EXTRA_LDFLAGS="-march=armv8-a -fPIE -L${DEVKITPRO}/libnx/lib -lEGL -lglapi -ldrm_nouveau -lnx"
         CheckDeclarationAfterStatement
+        CheckClockGettime
 
         # Set up files for the video library
         if test x$enable_video = xyes; then
@@ -25271,26 +25272,10 @@ $as_echo "#define SDL_JOYSTICK_SWITCH 1" >>confdefs.h
         # Set up files for the timer library
         if test x$enable_timers = xyes; then
 
-$as_echo "#define SDL_TIMER_SWITCH 1" >>confdefs.h
+$as_echo "#define SDL_TIMER_UNIX 1" >>confdefs.h
 
-            SOURCES="$SOURCES $srcdir/src/timer/switch/*.c"
+            SOURCES="$SOURCES $srcdir/src/timer/unix/*.c"
             have_timers=yes
-        fi
-        # Set up files for the system power library
-        if test x$enable_power = xyes; then
-
-$as_echo "#define SDL_POWER_SWITCH 1" >>confdefs.h
-
-            SOURCES="$SOURCES $srcdir/src/power/switch/*.c"
-            have_power=yes
-        fi
-        # Set up files for the system filesystem library
-        if test x$enable_filesystem = xyes; then
-
-$as_echo "#define SDL_FILESYSTEM_SWITCH 1" >>confdefs.h
-
-            SOURCES="$SOURCES $srcdir/src/filesystem/switch/*.c"
-            have_filesystem=yes
         fi
         # Set up files for the thread library
         if test x$enable_threads = xyes; then
