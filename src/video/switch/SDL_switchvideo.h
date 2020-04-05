@@ -31,20 +31,8 @@
 
 #include "SDL_egl.h"
 
-typedef struct SDL_DisplayData
-{
-    ViDisplay viDisplay;
-    EGLDisplay egl_display;
-} SDL_DisplayData;
-
-typedef struct SDL_DisplayModeData
-{
-} SDL_DisplayModeData;
-
 typedef struct SDL_WindowData
 {
-    ViLayer viLayer;
-    NWindow nWindow;
     EGLSurface egl_surface;
 } SDL_WindowData;
 

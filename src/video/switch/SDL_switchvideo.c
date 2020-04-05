@@ -35,6 +35,9 @@
 #include "SDL_switchkeyboard.h"
 #include "SDL_switchmouse_c.h"
 
+/* Currently only one window */
+SDL_Window *switch_window = NULL;
+
 static int
 SWITCH_Available(void)
 {
@@ -45,6 +48,7 @@ static void
 SWITCH_Destroy(SDL_VideoDevice *device)
 {
     if (device) {
+        SDL_free(device->driverdata);
         SDL_free(device);
     }
 }
@@ -97,6 +101,7 @@ SWITCH_CreateDevice(int devindex)
     device->GL_SwapWindow = SWITCH_GLES_SwapWindow;
     device->GL_DeleteContext = SWITCH_GLES_DeleteContext;
     device->GL_DefaultProfileConfig = SWITCH_GLES_DefaultProfileConfig;
+    device->GL_GetDrawableSize = SWITCH_GLES_GetDrawableSize;
 
     device->PumpEvents = SWITCH_PumpEvents;
 
@@ -104,10 +109,10 @@ SWITCH_CreateDevice(int devindex)
 }
 
 VideoBootStrap SWITCH_bootstrap = {
-    "Switch",
-    "OpenGL ES2 video driver for Nintendo Switch",
-    SWITCH_Available,
-    SWITCH_CreateDevice
+        "Switch",
+        "OpenGL ES2 video driver for Nintendo Switch",
+        SWITCH_Available,
+        SWITCH_CreateDevice
 };
 
 /*****************************************************************************/
@@ -118,42 +123,16 @@ SWITCH_VideoInit(_THIS)
 {
     SDL_VideoDisplay display;
     SDL_DisplayMode current_mode;
-    SDL_DisplayData *data;
-    SDL_DisplayModeData *mdata;
-    Result rc;
 
     SDL_zero(current_mode);
     current_mode.w = 1920;
     current_mode.h = 1080;
     current_mode.refresh_rate = 60;
     current_mode.format = SDL_PIXELFORMAT_RGBA8888;
-    mdata = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
-    current_mode.driverdata = mdata;
 
     SDL_zero(display);
     display.desktop_mode = current_mode;
     display.current_mode = current_mode;
-
-    /* Allocate display internal data */
-    data = (SDL_DisplayData *) SDL_calloc(1, sizeof(SDL_DisplayData));
-    if (data == NULL) {
-        return SDL_OutOfMemory();
-    }
-
-    data->egl_display = EGL_DEFAULT_DISPLAY;
-
-    // init vi
-    rc = viInitialize(ViServiceType_Default);
-    if (R_FAILED(rc)) {
-        return SDL_SetError("Could not initialize vi service: 0x%x", rc);
-    }
-
-    rc = viOpenDefaultDisplay(&data->viDisplay);
-    if (R_FAILED(rc)) {
-        return SDL_SetError("Could not open default display: 0x%x", rc);
-    }
-
-    display.driverdata = data;
     SDL_AddVideoDisplay(&display);
 
     // init touch
@@ -169,12 +148,6 @@ SWITCH_VideoInit(_THIS)
 void
 SWITCH_VideoQuit(_THIS)
 {
-    SDL_DisplayData *data = SDL_GetDisplayDriverData(0);
-    if (data) {
-        viCloseDisplay(&data->viDisplay);
-    }
-    viExit();
-
     // exit touch
     SWITCH_QuitTouch();
     //exit keyboard
@@ -187,7 +160,6 @@ void
 SWITCH_GetDisplayModes(_THIS, SDL_VideoDisplay *display)
 {
     SDL_DisplayMode mode;
-    SDL_DisplayModeData *data;
 
     // 1920x1080 RGBA8888, default mode
     SDL_AddDisplayMode(display, &display->current_mode);
@@ -198,28 +170,14 @@ SWITCH_GetDisplayModes(_THIS, SDL_VideoDisplay *display)
     mode.h = 720;
     mode.refresh_rate = 60;
     mode.format = SDL_PIXELFORMAT_RGBA8888;
-    data = (SDL_DisplayModeData *) SDL_calloc(1, sizeof(SDL_DisplayModeData));
-    mode.driverdata = data;
     SDL_AddDisplayMode(display, &mode);
 }
 
 int
 SWITCH_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
-    SDL_WindowData *data;
-    Result rc;
-
-    if (display->fullscreen_window) {
-        data = (SDL_WindowData *) display->fullscreen_window->driverdata;
-    }
-    else {
-        if (!SDL_GetFocusWindow()) {
-            return SDL_SetError("Could not get window focus");
-        }
-        data = (SDL_WindowData *) SDL_GetFocusWindow()->driverdata;
-    }
-
-    rc = nwindowSetCrop(&data->nWindow, 0, 1080 - mode->h, mode->w, 1080);
+    NWindow *nWindow = nwindowGetDefault();
+    Result rc = nwindowSetCrop(nWindow, 0, 0, mode->w, mode->h);
     if (rc) {
         return SDL_SetError("Could not set NWindow crop: 0x%x", rc);
     }
@@ -231,56 +189,42 @@ int
 SWITCH_CreateWindow(_THIS, SDL_Window *window)
 {
     Result rc;
-    SDL_DisplayData *ddata = SDL_GetDisplayDriverData(0);
-    SDL_WindowData *wdata = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
-    if (wdata == NULL) {
-        return SDL_OutOfMemory();
+    SDL_WindowData *window_data = NULL;
+    NWindow *nWindow = NULL;
+
+    if (switch_window != NULL) {
+        return SDL_SetError("Switch only supports one window");
     }
 
     if (!_this->egl_data) {
         return SDL_SetError("EGL not initialized");
     }
 
-    rc = viCreateLayer(&ddata->viDisplay, &wdata->viLayer);
-    if (R_FAILED(rc)) {
-        return SDL_SetError("Could not create vi layer: 0x%x", rc);
+    window_data = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
+    if (window_data == NULL) {
+        return SDL_OutOfMemory();
     }
 
-    rc = viSetLayerScalingMode(&wdata->viLayer, ViScalingMode_FitToLayer);
-    if (R_FAILED(rc)) {
-        viCloseLayer(&wdata->viLayer);
-        return SDL_SetError("Could not set vi scaling mode: 0x%x", rc);
-    }
+    nWindow = nwindowGetDefault();
 
-    rc = nwindowCreateFromLayer(&wdata->nWindow, &wdata->viLayer);
+    rc = nwindowSetDimensions(nWindow, 1920, 1080);
     if (R_FAILED(rc)) {
-        viCloseLayer(&wdata->viLayer);
-        return SDL_SetError("Could not create NWindow from layer: 0x%x", rc);
-    }
-
-    rc = nwindowSetDimensions(&wdata->nWindow, 1920, 1080);
-    if (R_FAILED(rc)) {
-        nwindowClose(&wdata->nWindow);
-        viCloseLayer(&wdata->viLayer);
         return SDL_SetError("Could not set NWindow dimensions: 0x%x", rc);
     }
 
-    rc = nwindowSetCrop(&wdata->nWindow, 0, 1080 - window->h, window->w, 1080);
+    rc = nwindowSetCrop(nWindow, 0, 0, window->w, window->h);
     if (R_FAILED(rc)) {
-        nwindowClose(&wdata->nWindow);
-        viCloseLayer(&wdata->viLayer);
         return SDL_SetError("Could not set NWindow crop: 0x%x", rc);
     }
 
-    wdata->egl_surface = SDL_EGL_CreateSurface(_this, &wdata->nWindow);
-    if (wdata->egl_surface == EGL_NO_SURFACE) {
-        nwindowClose(&wdata->nWindow);
-        viCloseLayer(&wdata->viLayer);
+    window_data->egl_surface = SDL_EGL_CreateSurface(_this, nWindow);
+    if (window_data->egl_surface == EGL_NO_SURFACE) {
         return SDL_SetError("Could not create GLES window surface");
     }
 
     /* Setup driver data for this window */
-    window->driverdata = wdata;
+    window->driverdata = window_data;
+    switch_window = window;
 
     /* One window, it always has focus */
     SDL_SetMouseFocus(window);
@@ -295,14 +239,15 @@ SWITCH_DestroyWindow(_THIS, SDL_Window *window)
 {
     SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
 
-    if (data) {
-        if (data->egl_surface != EGL_NO_SURFACE) {
-            SDL_EGL_DestroySurface(_this, data->egl_surface);
+    if (window == switch_window) {
+        if (data != NULL) {
+            if (data->egl_surface != EGL_NO_SURFACE) {
+                SDL_EGL_DestroySurface(_this, data->egl_surface);
+            }
+            SDL_free(window->driverdata);
+            window->driverdata = NULL;
         }
-        nwindowClose(&data->nWindow);
-        viCloseLayer(&data->viLayer);
-        SDL_free(data);
-        window->driverdata = NULL;
+        switch_window = NULL;
     }
 }
 
@@ -326,8 +271,8 @@ SWITCH_SetWindowPosition(_THIS, SDL_Window *window)
 void
 SWITCH_SetWindowSize(_THIS, SDL_Window *window)
 {
-    SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
-    nwindowSetCrop(&data->nWindow, 0, 1080 - window->h, window->w, 1080);
+    NWindow *nWindow = nwindowGetDefault();
+    nwindowSetCrop(nWindow, 0, 0, window->w, window->h);
 }
 void
 SWITCH_ShowWindow(_THIS, SDL_Window *window)

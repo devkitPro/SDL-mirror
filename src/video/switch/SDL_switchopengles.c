@@ -44,6 +44,13 @@ SWITCH_GLES_LoadLibrary(_THIS, const char *path)
     return SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
 }
 
+void
+SWITCH_GLES_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h)
+{
+    *w = 1920;
+    *h = 1080;
+}
+
 SDL_EGL_CreateContext_impl(SWITCH)
 SDL_EGL_MakeCurrent_impl(SWITCH)
 SDL_EGL_SwapWindow_impl(SWITCH)
