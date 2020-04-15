@@ -152,6 +152,10 @@ SWITCH_VideoInit(_THIS)
 void
 SWITCH_VideoQuit(_THIS)
 {
+    if (_this->gl_config.driver_loaded) {
+        SDL_GL_UnloadLibrary();
+    }
+
     // exit touch
     SWITCH_QuitTouch();
     //exit keyboard
