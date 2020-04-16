@@ -36,7 +36,8 @@
 #include "SDL_switchmouse_c.h"
 
 /* Currently only one window */
-SDL_Window *switch_window = NULL;
+static SDL_Window *switch_window = NULL;
+static AppletOperationMode operationMode;
 
 static int
 SWITCH_Available(void)
@@ -234,6 +235,9 @@ SWITCH_CreateWindow(_THIS, SDL_Window *window)
     window->driverdata = window_data;
     switch_window = window;
 
+    /* starting operation mode */
+    operationMode = appletGetOperationMode();
+
     /* One window, it always has focus */
     SDL_SetMouseFocus(window);
     SDL_SetKeyboardFocus(window);
@@ -329,6 +333,8 @@ SWITCH_SetWindowGrab(_THIS, SDL_Window *window, SDL_bool grabbed)
 void
 SWITCH_PumpEvents(_THIS)
 {
+    AppletOperationMode om;
+
     if (!appletMainLoop()) {
         SDL_Event ev;
         ev.type = SDL_QUIT;
@@ -340,6 +346,21 @@ SWITCH_PumpEvents(_THIS)
     SWITCH_PollTouch();
     SWITCH_PollKeyboard();
     SWITCH_PollMouse();
+
+    // handle docked / un-docked modes
+    // note that SDL_WINDOW_RESIZABLE is only possible in windowed mode,
+    // so we don't care about current fullscreen/windowed status
+    if(switch_window != NULL && switch_window->flags & SDL_WINDOW_RESIZABLE) {
+        om = appletGetOperationMode();
+        if(om != operationMode) {
+            operationMode = om;
+            if(operationMode == AppletOperationMode_Handheld) {
+                SDL_SetWindowSize(switch_window, 1280, 720);
+            } else {
+                SDL_SetWindowSize(switch_window, 1920, 1080);
+            }
+        }
+    }
 }
 
 #endif /* SDL_VIDEO_DRIVER_SWITCH */
