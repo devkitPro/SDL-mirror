@@ -36,9 +36,18 @@ static uint64_t prev_buttons = 0;
 static uint64_t last_timestamp = 0;
 const uint64_t mouse_read_interval = 15; // in ms
 
+static int
+SWITCH_SetRelativeMouseMode(SDL_bool enabled)
+{
+    return 0;
+}
+
 void 
 SWITCH_InitMouse(void)
 {
+    SDL_Mouse *mouse = SDL_GetMouse();
+
+    mouse->SetRelativeMouseMode = SWITCH_SetRelativeMouseMode;
 }
 
 void 
