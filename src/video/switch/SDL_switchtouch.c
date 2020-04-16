@@ -25,6 +25,7 @@
 #include <switch.h>
 
 #include "SDL_events.h"
+#include "SDL_hints.h"
 #include "../../events/SDL_touch_c.h"
 #include "../../video/SDL_sysvideo.h"
 
@@ -50,6 +51,7 @@ void
 SWITCH_InitTouch(void)
 {
     SDL_AddTouch((SDL_TouchID) 0, SDL_TOUCH_DEVICE_DIRECT, "Switch");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 }
 
 void
