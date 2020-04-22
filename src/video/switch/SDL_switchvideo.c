@@ -352,15 +352,14 @@ SWITCH_PumpEvents(_THIS)
         return;
     }
 
+    hidScanInput();
     // we don't want other inputs overlapping with software keyboard
-    if(!SWITCH_IsScreenKeyboardShown(_this, switch_window)) {
-        hidScanInput();
+    if(!SDL_IsTextInputActive()) {
         SWITCH_PollTouch();
         SWITCH_PollKeyboard();
         SWITCH_PollMouse();
-    } else {
-        SWITCH_PollSwkb();
     }
+    SWITCH_PollSwkb();
 
     // handle docked / un-docked modes
     // note that SDL_WINDOW_RESIZABLE is only possible in windowed mode,

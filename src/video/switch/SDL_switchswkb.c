@@ -22,8 +22,12 @@ SWITCH_InitSwkb()
 void
 SWITCH_PollSwkb(void)
 {
-    if(kbdInited && kbdShown) {
-        swkbdInlineUpdate(&kbd, NULL);
+    if(kbdInited) {
+        if(kbdShown) {
+            swkbdInlineUpdate(&kbd, NULL);
+        } else if(SDL_IsTextInputActive()) {
+            SDL_StopTextInput();
+        }
     }
 }
 
@@ -53,8 +57,9 @@ SWITCH_EnterCb(const char *str, SwkbdDecidedEnterArg* arg)
 {
     if(arg->stringLen > 0) {
         SDL_SendKeyboardText(str);
-        kbdShown = false;
     }
+
+    kbdShown = false;
 }
 
 static void
