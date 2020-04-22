@@ -9,21 +9,30 @@
 #include <switch.h>
 #include "SDL_switchswkb.h"
 
-static SwkbdConfig kbd;
-static bool kbd_inited = SDL_FALSE;
-static char kbd_str[512] = {0};
+static SwkbdInline kbd;
+static SwkbdAppearArg kbdAppearArg;
+static bool kbdInited = SDL_FALSE;
+static bool kbdShown = SDL_FALSE;
 
 void
 SWITCH_InitSwkb()
 {
-
 }
 
-void SWITCH_QuitSwkb()
+void
+SWITCH_PollSwkb(void)
 {
-    if(kbd_inited) {
-        swkbdClose(&kbd);
-        kbd_inited = false;
+    if(kbdInited && kbdShown) {
+        swkbdInlineUpdate(&kbd, NULL);
+    }
+}
+
+void
+SWITCH_QuitSwkb()
+{
+    if(kbdInited) {
+        swkbdInlineClose(&kbd);
+        kbdInited = false;
     }
 }
 
@@ -34,10 +43,24 @@ SWITCH_HasScreenKeyboardSupport(_THIS)
 }
 
 SDL_bool
-SWITCH_IsScreenKeyboardShown(_THIS, SDL_Window * window)
+SWITCH_IsScreenKeyboardShown(_THIS, SDL_Window *window)
 {
-    // we dont use (need?) inline/async swkb for now...
-    return false;
+    return kbdShown;
+}
+
+static void
+SWITCH_EnterCb(const char *str, SwkbdDecidedEnterArg* arg)
+{
+    if(arg->stringLen > 0) {
+        SDL_SendKeyboardText(str);
+        kbdShown = false;
+    }
+}
+
+static void
+SWITCH_CancelCb(void)
+{
+    SDL_StopTextInput();
 }
 
 void
@@ -45,26 +68,39 @@ SWITCH_StartTextInput(_THIS)
 {
     Result rc;
 
-    if(!kbd_inited) {
-        rc = swkbdCreate(&kbd, 0);
+    if(!kbdInited) {
+        rc = swkbdInlineCreate(&kbd);
         if (R_SUCCEEDED(rc)) {
-            swkbdConfigMakePresetDefault(&kbd);
-            kbd_inited = true;
+            rc = swkbdInlineLaunchForLibraryApplet(&kbd, SwkbdInlineMode_AppletDisplay, 0);
+            if(R_SUCCEEDED(rc)) {
+                swkbdInlineSetDecidedEnterCallback(&kbd, SWITCH_EnterCb);
+                swkbdInlineSetDecidedCancelCallback(&kbd, SWITCH_CancelCb);
+                swkbdInlineMakeAppearArg(&kbdAppearArg, SwkbdType_Normal);
+                swkbdInlineAppearArgSetOkButtonText(&kbdAppearArg, "Submit");
+                kbdAppearArg.dicFlag = 1;
+                kbdAppearArg.returnButtonFlag = 1;
+                kbdInited = true;
+            }
         }
     }
 
-    if(kbd_inited) {
-        memset(kbd_str, 0, sizeof(kbd_str));
-        swkbdShow(&kbd, kbd_str, sizeof(kbd_str));
-        if(strlen(kbd_str) > 0) {
-            SDL_SendKeyboardText(kbd_str);
-        }
+    if(kbdInited) {
+        swkbdInlineSetInputText(&kbd, "");
+        swkbdInlineSetCursorPos(&kbd, 0);
+        swkbdInlineUpdate(&kbd, NULL);
+        swkbdInlineAppear(&kbd, &kbdAppearArg);
+        kbdShown = true;
     }
 }
 
 void
 SWITCH_StopTextInput(_THIS)
 {
+    if(kbdInited) {
+        swkbdInlineDisappear(&kbd);
+    }
+
+    kbdShown = false;
 }
 
 #endif
