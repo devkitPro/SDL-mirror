@@ -2918,6 +2918,9 @@ SDL_GL_LoadLibrary(const char *path)
         retval = _this->GL_LoadLibrary(_this, path);
     }
     if (retval == 0) {
+#ifdef __SWITCH__
+        if(_this->gl_config.driver_loaded < 1)
+#endif
         ++_this->gl_config.driver_loaded;
     } else {
         if (_this->GL_UnloadLibrary) {
