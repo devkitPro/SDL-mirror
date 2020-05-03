@@ -156,7 +156,7 @@ SWITCH_JoystickUpdate(SDL_Joystick *joystick)
     static JoystickState pad_old[JOYSTICK_COUNT];
 
     int index = (int) SDL_JoystickInstanceID(joystick);
-    if (index > JOYSTICK_COUNT) {
+    if (index > JOYSTICK_COUNT || SDL_IsTextInputActive()) {
         return;
     }
 

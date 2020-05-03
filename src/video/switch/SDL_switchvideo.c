@@ -34,6 +34,7 @@
 #include "SDL_switchtouch.h"
 #include "SDL_switchkeyboard.h"
 #include "SDL_switchmouse_c.h"
+#include "SDL_switchswkb.h"
 
 /* Currently only one window */
 static SDL_Window *switch_window = NULL;
@@ -105,6 +106,11 @@ SWITCH_CreateDevice(int devindex)
     device->GL_DeleteContext = SWITCH_GLES_DeleteContext;
     device->GL_DefaultProfileConfig = SWITCH_GLES_DefaultProfileConfig;
 
+    device->StartTextInput = SWITCH_StartTextInput;
+    device->StopTextInput = SWITCH_StopTextInput;
+    device->HasScreenKeyboardSupport = SWITCH_HasScreenKeyboardSupport;
+    device->IsScreenKeyboardShown = SWITCH_IsScreenKeyboardShown;
+
     device->PumpEvents = SWITCH_PumpEvents;
 
     return device;
@@ -141,10 +147,12 @@ SWITCH_VideoInit(_THIS)
 
     // init touch
     SWITCH_InitTouch();
-    //init keyboard
+    // init keyboard
     SWITCH_InitKeyboard();
-    //init mouse
+    // init mouse
     SWITCH_InitMouse();
+    // init software keyboard
+    SWITCH_InitSwkb();
 
     return 0;
 }
@@ -158,10 +166,12 @@ SWITCH_VideoQuit(_THIS)
 
     // exit touch
     SWITCH_QuitTouch();
-    //exit keyboard
+    // exit keyboard
     SWITCH_QuitKeyboard();
-    //exit mouse
+    // exit mouse
     SWITCH_QuitMouse();
+    // exit software keyboard
+    SWITCH_QuitSwkb();
 }
 
 void
@@ -343,9 +353,13 @@ SWITCH_PumpEvents(_THIS)
     }
 
     hidScanInput();
-    SWITCH_PollTouch();
-    SWITCH_PollKeyboard();
-    SWITCH_PollMouse();
+    // we don't want other inputs overlapping with software keyboard
+    if(!SDL_IsTextInputActive()) {
+        SWITCH_PollTouch();
+        SWITCH_PollKeyboard();
+        SWITCH_PollMouse();
+    }
+    SWITCH_PollSwkb();
 
     // handle docked / un-docked modes
     // note that SDL_WINDOW_RESIZABLE is only possible in windowed mode,
