@@ -100,8 +100,14 @@ static void SDLCALL
 SDL_TouchMouseEventsChanged(void *userdata, const char *name, const char *oldValue, const char *hint)
 {
     SDL_Mouse *mouse = (SDL_Mouse *)userdata;
+    SDL_bool default_value;
 
-    mouse->touch_mouse_events = SDL_GetStringBoolean(hint, SDL_TRUE);
+#if defined(__SWITCH__)
+    default_value = SDL_FALSE;
+#else
+    default_value = SDL_TRUE;
+#endif
+    mouse->touch_mouse_events = SDL_GetStringBoolean(hint, default_value);
 }
 
 static void SDLCALL
