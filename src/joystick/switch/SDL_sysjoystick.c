@@ -150,6 +150,7 @@ SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint
 static void
 SWITCH_HandleSingleJoycons(int mode)
 {
+    // handle single joycon's states (@ rsn8887)
     static int previous_single_joycon_mode = -1;
     static int previous_handheld_mode = -1;
     int lastRightId = 8;
