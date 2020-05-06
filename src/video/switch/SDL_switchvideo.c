@@ -160,11 +160,6 @@ SWITCH_VideoInit(_THIS)
 void
 SWITCH_VideoQuit(_THIS)
 {
-    if (_this->gl_config.driver_loaded > 0) {
-        SWITCH_GLES_UnloadLibrary(_this);
-        _this->gl_config.driver_loaded = 0;
-    }
-
     // exit touch
     SWITCH_QuitTouch();
     // exit keyboard

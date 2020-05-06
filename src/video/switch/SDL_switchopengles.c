@@ -41,7 +41,9 @@ SWITCH_GLES_DefaultProfileConfig(_THIS, int *mask, int *major, int *minor)
 int
 SWITCH_GLES_LoadLibrary(_THIS, const char *path)
 {
-    return SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
+    int res = SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
+    _this->gl_config.driver_loaded--;
+    return res;
 }
 
 SDL_EGL_CreateContext_impl(SWITCH)
