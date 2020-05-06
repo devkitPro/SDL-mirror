@@ -42,7 +42,9 @@ int
 SWITCH_GLES_LoadLibrary(_THIS, const char *path)
 {
     int res = SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
-    _this->gl_config.driver_loaded--;
+    if(res == 0) {
+        _this->gl_config.driver_loaded--;
+    }
     return res;
 }
 
