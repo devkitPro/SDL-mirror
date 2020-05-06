@@ -37,13 +37,15 @@ typedef struct JoystickState
     JoystickPosition l_pos;
     JoystickPosition r_pos;
     u64 buttons;
+    u32 vibrationDeviceHandles[2][2];
+    HidVibrationValue vibrationValues[2];
 } JoystickState;
 
 /* Current pad state */
 static JoystickState pad[JOYSTICK_COUNT];
 
 static HidControllerID pad_id[JOYSTICK_COUNT] = {
-        CONTROLLER_P1_AUTO, CONTROLLER_PLAYER_2,
+        CONTROLLER_PLAYER_1, CONTROLLER_PLAYER_2,
         CONTROLLER_PLAYER_3, CONTROLLER_PLAYER_4,
         CONTROLLER_PLAYER_5, CONTROLLER_PLAYER_6,
         CONTROLLER_PLAYER_7, CONTROLLER_PLAYER_8
@@ -67,8 +69,14 @@ static const HidControllerKeys pad_mapping[] = {
 static int
 SWITCH_JoystickInit(void)
 {
+    Result rc;
+
     for (int i = 0; i < JOYSTICK_COUNT; i++) {
         pad[i].id = pad_id[i];
+        rc = hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[0], 2, CONTROLLER_HANDHELD, TYPE_HANDHELD);
+        if (R_FAILED(rc)) printf("hidInitializeVibrationDevices() returned: 0x%x\n", rc);
+        rc = hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[1], 2, pad[i].id, TYPE_JOYCON_PAIR);
+        if (R_FAILED(rc)) printf("hidInitializeVibrationDevices() returned: 0x%x\n", rc);
     }
 
     return JOYSTICK_COUNT;
@@ -140,8 +148,44 @@ SWITCH_JoystickOpen(SDL_Joystick *joystick, int device_index)
 static int
 SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
 {
-    // TODO
-    return SDL_Unsupported();
+    int target_device = 0;
+    int id = joystick->instance_id;
+    Result rc;
+
+    if (!hidGetHandheldMode())
+        target_device = 1;
+
+    printf("SWITCH_JoystickRumble: id: %i, target: %i, low = %i, high = %i\n", id, target_device, low_frequency_rumble, high_frequency_rumble);
+
+    memset(&pad[id].vibrationValues[1], 0, sizeof(pad[id].vibrationValues));
+
+    pad[id].vibrationValues[0].amp_low = pad[id].vibrationValues[0].amp_high = 0.5f;
+    pad[id].vibrationValues[0].freq_low = 30.0f; //low_frequency_rumble;
+    pad[id].vibrationValues[0].freq_high = 50.0f; //high_frequency_rumble;
+
+    pad[id].vibrationValues[1].amp_low = pad[id].vibrationVa
+
+
+
+
+
+
+
+
+
+
+
+
+            .....................lues[0].amp_high = 10.0f;
+    pad[id].vibrationValues[1].freq_low = 30.0f; //low_frequency_rumble;
+    pad[id].vibrationValues[1].freq_high = 50.0f; //high_frequency_rumble;
+
+    //memcpy(&pad[id].vibrationValues[1], &pad[id].vibrationValues[0], sizeof(HidVibrationValue));
+
+    rc = hidSendVibrationValues(pad[id].vibrationDeviceHandles[target_device], pad[id].vibrationValues, 2);
+    if (R_FAILED(rc)) printf("hidSendVibrationValues() returned: 0x%x\n", rc);
+
+    return 0;
 }
 
 /* Function to update the state of a joystick - called as a device poll.
