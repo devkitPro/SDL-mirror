@@ -45,7 +45,7 @@ typedef struct JoystickState
 static JoystickState pad[JOYSTICK_COUNT];
 
 static HidControllerID pad_id[JOYSTICK_COUNT] = {
-        CONTROLLER_PLAYER_1, CONTROLLER_PLAYER_2,
+        CONTROLLER_P1_AUTO, CONTROLLER_PLAYER_2,
         CONTROLLER_PLAYER_3, CONTROLLER_PLAYER_4,
         CONTROLLER_PLAYER_5, CONTROLLER_PLAYER_6,
         CONTROLLER_PLAYER_7, CONTROLLER_PLAYER_8
@@ -69,14 +69,14 @@ static const HidControllerKeys pad_mapping[] = {
 static int
 SWITCH_JoystickInit(void)
 {
-    Result rc;
-
     for (int i = 0; i < JOYSTICK_COUNT; i++) {
         pad[i].id = pad_id[i];
-        rc = hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[0], 2, CONTROLLER_HANDHELD, TYPE_HANDHELD);
-        if (R_FAILED(rc)) printf("hidInitializeVibrationDevices() returned: 0x%x\n", rc);
-        rc = hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[1], 2, pad[i].id, TYPE_JOYCON_PAIR);
-        if (R_FAILED(rc)) printf("hidInitializeVibrationDevices() returned: 0x%x\n", rc);
+        hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[0], 2, CONTROLLER_HANDHELD, TYPE_HANDHELD);
+        if(pad[i].id == CONTROLLER_P1_AUTO) {
+            hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[1], 2, CONTROLLER_PLAYER_1, TYPE_HANDHELD);
+        } else {
+            hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[1], 2, pad[i].id, TYPE_JOYCON_PAIR);
+        }
     }
 
     return JOYSTICK_COUNT;
@@ -150,40 +150,17 @@ SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint
 {
     int target_device = 0;
     int id = joystick->instance_id;
-    Result rc;
 
-    if (!hidGetHandheldMode())
+    if (!hidGetHandheldMode()) {
         target_device = 1;
+    }
 
-    printf("SWITCH_JoystickRumble: id: %i, target: %i, low = %i, high = %i\n", id, target_device, low_frequency_rumble, high_frequency_rumble);
+    pad[id].vibrationValues[0].amp_low = pad[id].vibrationValues[0].amp_high = low_frequency_rumble == 0 ? 0.0f : 320.0f;
+    pad[id].vibrationValues[0].freq_low = low_frequency_rumble == 0 ? 160.0f : (float) low_frequency_rumble / 204;
+    pad[id].vibrationValues[0].freq_high = high_frequency_rumble == 0 ? 320.0f : (float) high_frequency_rumble / 204;
+    memcpy(&pad[id].vibrationValues[1], &pad[id].vibrationValues[0], sizeof(HidVibrationValue));
 
-    memset(&pad[id].vibrationValues[1], 0, sizeof(pad[id].vibrationValues));
-
-    pad[id].vibrationValues[0].amp_low = pad[id].vibrationValues[0].amp_high = 0.5f;
-    pad[id].vibrationValues[0].freq_low = 30.0f; //low_frequency_rumble;
-    pad[id].vibrationValues[0].freq_high = 50.0f; //high_frequency_rumble;
-
-    pad[id].vibrationValues[1].amp_low = pad[id].vibrationVa
-
-
-
-
-
-
-
-
-
-
-
-
-            .....................lues[0].amp_high = 10.0f;
-    pad[id].vibrationValues[1].freq_low = 30.0f; //low_frequency_rumble;
-    pad[id].vibrationValues[1].freq_high = 50.0f; //high_frequency_rumble;
-
-    //memcpy(&pad[id].vibrationValues[1], &pad[id].vibrationValues[0], sizeof(HidVibrationValue));
-
-    rc = hidSendVibrationValues(pad[id].vibrationDeviceHandles[target_device], pad[id].vibrationValues, 2);
-    if (R_FAILED(rc)) printf("hidSendVibrationValues() returned: 0x%x\n", rc);
+    hidSendVibrationValues(pad[id].vibrationDeviceHandles[target_device], pad[id].vibrationValues, 2);
 
     return 0;
 }
