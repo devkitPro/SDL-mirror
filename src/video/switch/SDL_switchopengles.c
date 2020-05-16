@@ -41,14 +41,7 @@ SWITCH_GLES_DefaultProfileConfig(_THIS, int *mask, int *major, int *minor)
 int
 SWITCH_GLES_LoadLibrary(_THIS, const char *path)
 {
-    int res = SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
-    if(res == 0) {
-        // TODO: we think an SDL bug was added here in commit efee6e6,
-        // TODO: SDL_EGL_LoadLibraryOnly will increment driver_loaded, as SDL_GL_LoadLibrary
-        // TODO: remove this when upstream is fixed
-        _this->gl_config.driver_loaded--;
-    }
-    return res;
+    return SDL_EGL_LoadLibrary(_this, path, EGL_DEFAULT_DISPLAY, 0);
 }
 
 SDL_EGL_CreateContext_impl(SWITCH)
