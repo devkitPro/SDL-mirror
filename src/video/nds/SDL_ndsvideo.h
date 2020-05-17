@@ -40,22 +40,4 @@ struct SDL_PrivateVideoData {
     short secondbufferallocd;
 };
 
-/*
-#define NDS_VIDC_BASE 0x4000000
-#define NDS_DISPCNT (*(volatile Uint32*)(NDS_VIDC_BASE))
-#define NDS_VIDC_SCANLINE (NDS_VIDC_BASE+6)
-#define NDS_SCANLINE (*(volatile Uint8*)(NDS_VIDC_SCANLINE))
-
-#define NDS_DISP_MODE(n) (n&7)
-#define NDS_DISP_BG2 0x400
-#define NDS_DISP_FB 0x10
-
-#define NDS_PAL_BASE 0x5000000
-#define NDS_BGPAL ((volatile Uint16*)(NDS_PAL_BASE))
-#define NDS_OBJPAL ((volatile Uint16*)(NDS_PAL_BASE+0x200))
-
-#define NDS_VRAM_BASE 0x6000000
-#define NDS_VRAM_2NDBUF 0x600a000
-#define NDS_VRAM = ((volatile Uint16* )NDS_VRAM_BASE)
-*/
 #endif /* _SDL_ndsvideo_h */

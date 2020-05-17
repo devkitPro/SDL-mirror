@@ -33,7 +33,6 @@
 
 #include "SDL_ndsvideo.h"
 #include "SDL_ndsevents_c.h"
-#include "SDL_ndsmouse_c.h"
 
 #define NDSVID_DRIVER_NAME "nds"
 
@@ -58,7 +57,7 @@ static void NDS_UpdateRects(_THIS, int numrects, SDL_Rect *rects);
 
 static int NDS_Available(void)
 {
-	return(1);
+	return 1;
 }
 
 static void NDS_DeleteDevice(SDL_VideoDevice *device)
@@ -69,41 +68,40 @@ static void NDS_DeleteDevice(SDL_VideoDevice *device)
 
 static int HWAccelBlit(SDL_Surface *src, SDL_Rect *srcrect,
                         SDL_Surface *dst, SDL_Rect *dstrect)
- {
+{
 	return 0;
- }
+}
  
 static int CheckHWBlit(_THIS, SDL_Surface *src, SDL_Surface *dst)
 {
- 	if (src->flags & SDL_SRCALPHA) return false;
- 	if (src->flags & SDL_SRCCOLORKEY) return false;
- 	if (src->flags & SDL_HWPALETTE ) return false;
- 	if (dst->flags & SDL_SRCALPHA) return false;
- 	if (dst->flags & SDL_SRCCOLORKEY) return false;
- 	if (dst->flags & SDL_HWPALETTE ) return false;
+	if (src->flags & SDL_SRCALPHA) return false;
+	if (src->flags & SDL_SRCCOLORKEY) return false;
+	if (src->flags & SDL_HWPALETTE) return false;
+	if (dst->flags & SDL_SRCALPHA) return false;
+	if (dst->flags & SDL_SRCCOLORKEY) return false;
+	if (dst->flags & SDL_HWPALETTE) return false;
 
- 	if (src->format->BitsPerPixel != dst->format->BitsPerPixel) return false;
- 	if (src->format->BytesPerPixel != dst->format->BytesPerPixel) return false;
- 		
-        src->map->hw_blit = HWAccelBlit;
-        return true;
+	if (src->format->BitsPerPixel != dst->format->BitsPerPixel) return false;
+	if (src->format->BytesPerPixel != dst->format->BytesPerPixel) return false;
+
+	src->map->hw_blit = HWAccelBlit;
+	return true;
 }
 
 static SDL_VideoDevice *NDS_CreateDevice(int devindex)
 {
-	SDL_VideoDevice *device=0;
-
+	SDL_VideoDevice *device = 0;
 
 	/* Initialize all variables that we clean on shutdown */
 	device = (SDL_VideoDevice *)SDL_malloc(sizeof(SDL_VideoDevice));
-	if ( device ) {
+	if (device) {
 		SDL_memset(device, 0, (sizeof *device));
 		device->hidden = (struct SDL_PrivateVideoData *)
 				SDL_malloc((sizeof *device->hidden));
 	}
-	if ( (device == NULL) || (device->hidden == NULL) ) {
+	if ((device == NULL) || (device->hidden == NULL)) {
 		SDL_OutOfMemory();
-		if ( device ) {
+		if (device) {
 			SDL_free(device);
 		}
 		return(0);
@@ -145,12 +143,11 @@ VideoBootStrap NDS_bootstrap = {
 	NDS_Available, NDS_CreateDevice
 };
 
-	u16* frontBuffer;// = (u16*)(0x06000000);
-	u16* backBuffer;// =  (u16*)(0x06000000 + 256 * 256 * 2); 
+u16* frontBuffer;
+u16* backBuffer;
+
 int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 {
-	//printf("WARNING: You are using the SDL NDS video driver!\n");
-
 	/* Determine the screen depth (use default 8-bit depth) */
 	/* we change this during the SDL_SetVideoMode implementation... */
 	vformat->BitsPerPixel = 16;	// mode 3
@@ -160,53 +157,22 @@ int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	vformat->Bmask = 0x0000001f; 
 	powerOn(POWER_ALL);
 
-    //set the mode for 2 text layers and two extended background layers
-	//videoSetMode(MODE_5_2D | DISPLAY_BG3_ACTIVE); 
-	videoSetMode(MODE_6_2D| DISPLAY_BG2_ACTIVE); 
+	videoSetMode(MODE_6_2D | DISPLAY_BG2_ACTIVE);
 	
 	//set the sub background up for text display (we could just print to one
 	//of the main display text backgrounds just as easily
 	videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE); //sub bg 0 will be used to print text
-	
-    //set the first two banks as background memory and the third as sub background memory
-    //D is not used..if you need a bigger background then you will need to map
-    //more vram banks consecutivly (VRAM A-D are all 0x20000 bytes in size)
-    //vramSetMainBanks(VRAM_A_MAIN_BG_0x6000000, VRAM_B_MAIN_BG_0x6020000,VRAM_C_SUB_BG , VRAM_D_LCD); 
-	vramSetMainBanks(VRAM_A_MAIN_BG,VRAM_B_MAIN_BG,VRAM_C_MAIN_BG,VRAM_D_MAIN_BG);
-	//vramSetBankA(VRAM_A_MAIN_BG);
-	//vramSetBankB(VRAM_B_MAIN_BG);
-	//vramSetBankC(VRAM_C_MAIN_BG);
-	//vramSetBankD(VRAM_D_MAIN_BG);
-	//vramSetBankE(VRAM_E_MAIN_BG);
-	//vramSetBankF(VRAM_F_MAIN_BG);
-	//vramSetBankG(VRAM_G_MAIN_BG);
+
+	vramSetMainBanks(VRAM_A_MAIN_BG, VRAM_B_MAIN_BG, VRAM_C_MAIN_BG, VRAM_D_MAIN_BG);
 	vramSetBankH(VRAM_H_SUB_BG);
 	vramSetBankI(VRAM_I_LCD);
-    
-	///////////////set up our bitmap background///////////////////////
-
-	//BG3_CR = BG_BMP16_512x512;
-	
-	//these are rotation backgrounds so you must set the rotation attributes:
-    //these are fixed point numbers with the low 8 bits the fractional part
-    //this basicaly gives it a 1:1 translation in x and y so you get a nice flat bitmap
-      /*  BG3_XDX = 1<<8;
-        BG3_XDY = 0; 
-        BG3_YDX = 0;
-        BG3_YDY = 1<<8;
-    //our bitmap looks a bit better if we center it so scroll down (256 - 192) / 2 
-        BG3_CX = 0;
-        BG3_CY = 0; 	
-		*/
 
 	consoleInit(NULL, 0, BgType_Text4bpp, BgSize_T_256x256, 15, 0, false, true);
 
-	frontBuffer =(u16*)(0x06000000);
-	//backBuffer  =(u16*)(0x06000000 + 1024 * 512*2); 
+	frontBuffer = (u16*)(0x06000000);
 
-	//lcdSwap();
 	/* We're done! */
-	return(0); 
+	return 0;
 }
 
 SDL_Rect **NDS_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags)
@@ -219,80 +185,60 @@ SDL_Surface *NDS_SetVideoMode(_THIS, SDL_Surface *current,
 {
 	Uint32 Rmask, Gmask, Bmask, Amask; 
 
-	//if(width > 1024 || height > 512 || bpp > 16)
-	//	return(NULL);
-
-	if(bpp >8) {
+	if (bpp > 8) {
 		bpp=16;
  		Rmask = 0x0000001F;
 		Gmask = 0x000003E0;
 		Bmask = 0x00007C00;
 		Amask = 0x00008000;
 
-		videoSetMode(MODE_5_2D| DISPLAY_BG2_ACTIVE); 
+		videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE);
 
-		vramSetMainBanks(VRAM_A_MAIN_BG,VRAM_B_MAIN_BG,VRAM_C_MAIN_BG,VRAM_D_MAIN_BG);
+		vramSetMainBanks(VRAM_A_MAIN_BG, VRAM_B_MAIN_BG, VRAM_C_MAIN_BG, VRAM_D_MAIN_BG);
 
 		BG2_CR = BG_BMP16_512x512;
-	    BG2_XDX = ((width / 256) << 8) | (width % 256) ; 
-        BG2_XDY = 0; 
-        BG2_YDX = 0;	
-        BG2_YDY = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3) ;
-        BG2_CX = 0;
-        BG2_CY = 0; 
-//        for (i=0;i<256*192;i++)
-//	        frontBuffer[i] = RGB15(31,0,0)|BIT(15);
-	}
-	else
-	if(bpp <= 8) {
+		BG2_XDX = ((width / 256) << 8) | (width % 256) ;
+		BG2_XDY = 0;
+		BG2_YDX = 0;
+		BG2_YDY = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3) ;
+		BG2_CX = 0;
+		BG2_CY = 0;
+	} else if (bpp <= 8) {
 		bpp=8;
 		Rmask = 0x00000000;
-		Gmask = 0x00000000; 
+		Gmask = 0x00000000;
 		Bmask = 0x00000000;
-		BG2_CR = BG_BMP8_1024x512;
-        BG2_XDX = ((width / 256) << 8) | (width % 256) ;
-        BG2_XDY = 0; 
-        BG2_YDX = 0;
-        BG2_YDY = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3) ;
 
+		BG2_CR = BG_BMP8_1024x512;
+		BG2_XDX = ((width / 256) << 8) | (width % 256);
+		BG2_XDY = 0;
+		BG2_YDX = 0;
+		BG2_YDY = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3);
 	}
-	else
-		if(bpp < 15) bpp=15;
-	if(width<=256) width=256;
-	else
-		if(width<256) width=256;
-	if(height<=192) height=192;
-	else
-		if(height<192) height=192;
+
+	if(width<256) width=256;
+	if(height<192) height=192;
 	
 	if(bpp==8)
 	{
-		if(width<256) width=256;
-		if(height<192) height=192;
 		this->hidden->ndsmode=4;
 	}
-	
-	if(bpp==15)
+
+	if(bpp == 15)
 	{
-		if(width<256) this->hidden->ndsmode=5;
-		else this->hidden->ndsmode=3; 
+		if(width<256) this->hidden->ndsmode = 5;
+		else this->hidden->ndsmode = 3;
 	}
 
-	this->hidden->buffer= frontBuffer;//NDS_VRAM_BASE;
-	
-	//NDS_DISPCNT = NDS_DISP_MODE(this->hidden->ndsmode)|NDS_DISP_BG2;
-	
- 	//fprintf(stderr,"Setting mode %dx%d (ndsmode %d)\n", width, height,this->hidden->ndsmode);
+	this->hidden->buffer = frontBuffer;
 
-	// FIXME: How do I tell that 15 bits mode is 555?
-
-	SDL_memset(this->hidden->buffer, 0, 1024 * 512* ((this->hidden->ndsmode==4 || this->hidden->ndsmode==5) ? 2 : 1 ) * ((bpp+7) / 8));
+	SDL_memset(this->hidden->buffer, 0, 1024 * 512 * ((this->hidden->ndsmode == 4 || this->hidden->ndsmode == 5) ? 2 : 1 ) * ((bpp + 7) / 8));
 
 	/* Allocate the new pixel format for the screen */
-	if ( ! SDL_ReallocFormat(current, bpp, Rmask, Gmask, Bmask, Amask) ) {
+	if (!SDL_ReallocFormat(current, bpp, Rmask, Gmask, Bmask, Amask)) {
 		this->hidden->buffer = NULL;
 		SDL_SetError("Couldn't allocate new pixel format for requested mode");
-		return(NULL);
+		return (NULL);
 	}
 
 	/* Set up the new mode framebuffer */
@@ -300,156 +246,60 @@ SDL_Surface *NDS_SetVideoMode(_THIS, SDL_Surface *current,
 	this->hidden->w = current->w = width;
 	this->hidden->h = current->h = height;
 	current->pixels = frontBuffer;
+	current->pitch = 1024;
 
 	if (flags & SDL_DOUBLEBUF) { 
-		this->hidden->secondbufferallocd=1;
-		backBuffer=(u16*)SDL_malloc(1024*512*2);
+		this->hidden->secondbufferallocd = 1;
+		backBuffer=(u16*)SDL_malloc(1024 * 512 * 2);
 		current->pixels = backBuffer; 
 	}
-	if(bpp==8)
-		current->pitch =1024;
-	else
-		current->pitch =512*2;
 
 	/* We're done */
-	return(current);
+	return current;
 }
 
 static int NDS_AllocHWSurface(_THIS, SDL_Surface *surface)
 {
 	if(this->hidden->secondbufferallocd) {
-		//printf("double double buffer alloc\n");
 		return -1;
 	}
-	//if(this->hidden->ndsmode==3)
-	//{
-	//	printf("no 2nd buffer in mode3\n");
-	//	return -1;
-	//}
-	//printf("second buffer\n");
-	//this->hidden->secondbufferallocd=1;
-	//backBuffer=(u16*)malloc(1024*512*2);
-	//surface->pixels = backBuffer; 
 
-	return(0);
+	return 0;
 }
 static void NDS_FreeHWSurface(_THIS, SDL_Surface *surface)
 {
-	//free(backBuffer);
-	this->hidden->secondbufferallocd=0;
+	this->hidden->secondbufferallocd = 0;
 }
-int z=0;
+
 /* We need to wait for vertical retrace on page flipped displays */
 static int NDS_LockHWSurface(_THIS, SDL_Surface *surface)
 {
-/*
-	uint8* a = surface->pixels;
-  int i,j;
-  a += 5 * SCREEN_WIDTH + 5;
-  for( i = 0; i < 195; ++i) {
-    uint16* line = a + (SCREEN_WIDTH * i);
-    for( j = 0; j < 158; ++j) {
-      *line++ = RGB15(155,155,25);
-    }
-  }
-*/
-	//if (z <256)
-	// BG_PALETTE[z++]=RGB15(255-z,z,255-z);
-
- 
-	return(0);
+	return 0;
 }
 
 static void NDS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 {
-	return;
 }
 
 static int NDS_FlipHWSurface(_THIS, SDL_Surface *surface)
 {
 	if(this->hidden->secondbufferallocd){
 		while(DISP_Y!=192);
-	    while(DISP_Y==192); 
-		//printf("flip");
+		while(DISP_Y==192);
 
 		dmaCopyAsynch(backBuffer,frontBuffer,1024*512);
 	}
-		//printf("flip\n");
-        //u16* temp = surface->pixels;
-        //surface->pixels = frontBuffer;
-        //frontBuffer = temp;
-	/*	u8* vram=BG_GFX;
-	int x,y;
-	for(y = 0; y < 512; y++)
-		dmaCopy(&frontBuffer[y*rects->w], &vram[y*512],512);
-	//unsigned char buf;
-	
-	//printf("NDS_FlipHWSurface\n");
-	//printf("ptr now: 0x%x\n",surface->pixels);
 
-	    while(DISP_Y!=192);
-	    while(DISP_Y==192); 
-        //swap
-        u16* temp = frontBuffer;
-        frontBuffer = backBuffer;
-        backBuffer = temp;
-        
-        //flip 
-        //base is 16KB and screen size is 256x256x2 (128KB)
-        BG2_CR ^= BG_BMP_BASE( 512 / 16 ); */
-/*
-	if(surface->pixels == frontBuffer)//NDS_VRAM_BASE)
-	{
-			while(DISP_Y!=192);
-	while(DISP_Y==192); 
-        //swap
-        u16* temp = backBuffer;
-        backBuffer = frontBuffer;
-        frontBuffer = temp;
-        
-        //flip 
-        //base is 16KB and screen size is 256x256x2 (128KB)
-        BG3_CR ^= BG_BMP_BASE( 128 / 16 ); 
-	}
-	else
-	{
-
-		while(DISP_Y!=192);
-	while(DISP_Y==192); 
-        //swap
-        u16* temp = frontBuffer;
-        frontBuffer = backBuffer;
-        backBuffer = temp;
-        
-        //flip 
-        //base is 16KB and screen size is 256x256x2 (128KB)
-        BG3_CR ^= BG_BMP_BASE( 128 / 16 ); 
-		
-	}
-	*/
-	//printf("ptr then: 0x%x\n",surface->pixels);
-
-	//printf("setting dispcnt to 0x%x\n",NDS_DISPCNT = NDS_DISP_MODE(this->hidden->ndsmode)|NDS_DISP_BG2| buf);
-	return(0);
+	return 0;
 }
 
 static void NDS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 {
-	//fprintf(stderr,"update\n");
 	/* do nothing. */
-	//dmaCopy(frontBuffer,BG_GFX,512*512);
-	 /*
-	u8* vram=(u8*)BG_GFX;
-	int x,y;
-	for(y = 0; y < 512; y++)
-		dmaCopy(&frontBuffer[y*rects->w], &vram[y*512],512);
-	 */
-
 }
 
 int NDS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
 {
-	//printf("SetColors\n");
 	short r,g,b;
 	
 	if(this->hidden->ndsmode != 4)
@@ -458,16 +308,16 @@ int NDS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
 		return -1;
 	}
 
-	int i,j=firstcolor+ncolors;
-	for(i=firstcolor;i<j;i++)
+	int i, j = firstcolor + ncolors;
+	for(i = firstcolor; i < j; i++)
 	{
-		r=colors[i].r>>3;
-		g=colors[i].g>>3;
-		b=colors[i].b>>3;
-		BG_PALETTE[i]=RGB15(r, g, b);
+		r = colors[i].r>>3;
+		g = colors[i].g>>3;
+		b = colors[i].b>>3;
+		BG_PALETTE[i] = RGB15(r, g, b);
 	} 
 
-	return(0);
+	return 0;
 }
 
 /* Note:  If we are terminated, this could be called in the middle of

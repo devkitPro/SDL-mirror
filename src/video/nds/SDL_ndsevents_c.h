@@ -31,21 +31,5 @@ extern void NDS_PumpEvents(_THIS);
 
 #define NDS_NUMKEYS 12
 
-/*
-#define NDS_JOYPADREG 0x4000130
-#define NDS_JOYPAD (*(volatile Uint16*)NDS_JOYPADREG)
-
-#define NDS_NUMKEYS 10
-#define NDS_KEYA (0)
-#define NDS_KEYB (1)
-#define NDS_KEYSEL (2)
-#define NDS_KEYSTART (3)
-#define NDS_KEYRIGHT (4)
-#define NDS_KEYLEFT (5)
-#define NDS_KEYUP (6)
-#define NDS_KEYDOWN (7)
-#define NDS_KEYR (8)
-#define NDS_KEYL (9)
-*/
 /* end of SDL_NDSevents_c.h ... */
 
