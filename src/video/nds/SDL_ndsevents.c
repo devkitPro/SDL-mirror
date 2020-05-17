@@ -35,6 +35,7 @@ char keymem[NDS_NUMKEYS];	/* memorize states of buttons */
 
 void NDS_PumpEvents(_THIS)
 {
+#if 0
 	scanKeys();
 	int i;
 	SDL_keysym keysym;
@@ -60,6 +61,7 @@ void NDS_PumpEvents(_THIS)
 	//touch=touchReadXY();
 	//if (touch.px!=0 || touch.py!=0)
 	//	SDL_PrivateMouseMotion(SDL_PRESSED, 0, touch.px, touch.py);
+#endif
 }
 
 void NDS_InitOSKeymap(_THIS)

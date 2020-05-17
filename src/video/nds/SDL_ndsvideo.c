@@ -67,20 +67,6 @@ static void NDS_DeleteDevice(SDL_VideoDevice *device)
 	SDL_free(device);
 }
 
-void on_irq_vblank() 
-{	
-  // Disable interrupts
-  //REG_IME = 0;
-  scanKeys();
-
-  //  VBLANK_INTR_WAIT_FLAGS |= IRQ_VBLANK; 
-  //  REG_IF |= IRQ_VBLANK; 
-  //REG_IF = REG_IF;
-
-  // Enable interrupts
-  //REG_IME = 1;
-}
-
 static int HWAccelBlit(SDL_Surface *src, SDL_Rect *srcrect,
                         SDL_Surface *dst, SDL_Rect *dstrect)
  {
@@ -173,9 +159,6 @@ int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	vformat->Gmask = 0x000007e0;
 	vformat->Bmask = 0x0000001f; 
 	powerOn(POWER_ALL);
-	irqInit();
-	irqSet(IRQ_VBLANK, on_irq_vblank); 
-	irqEnable(IRQ_VBLANK);
 
     //set the mode for 2 text layers and two extended background layers
 	//videoSetMode(MODE_5_2D | DISPLAY_BG3_ACTIVE); 
