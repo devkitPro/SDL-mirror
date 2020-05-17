@@ -8,46 +8,60 @@ endif
 ifeq ($(strip $(DEVKITARM)),)
 DEVKITARM := $(DEVKITPRO)/devkitARM
 endif
+PORTLIBS := $(DEVKITPRO)/portlibs/nds
 
 
-SRCS = $(shell echo ./src/*.c ./src/audio/*.c ./src/cdrom/*.c ./src/cpuinfo/*.c ./src/events/*.c ./src/file/*.c ./src/stdlib/*.c ./src/thread/*.c ./src/timer/*.c ./src/video/*.c ./src/joystick/*.c ./src/joystick/nds/*.c ./src/cdrom/dummy/*.c ./src/thread/generic/*.c ./src/timer/nds/*.c ./src/loadso/dummy/*.c ./src/audio/dummy/*.c ./src/audio/nds/*.c ./src/video/dummy/*.c ./src/video/nds/*.c)
-
+SRCS = $(shell echo ./src/*.c ./src/audio/*.c ./src/cdrom/*.c ./src/cpuinfo/*.c ./src/events/*.c ./src/file/*.c ./src/stdlib/*.c ./src/thread/*.c ./src/timer/*.c ./src/video/*.c ./src/joystick/*.c ./src/joystick/nds/*.c ./src/cdrom/dummy/*.c ./src/thread/generic/*.c ./src/timer/nds/*.c ./src/loadso/dummy/*.c ./src/audio/dummy/*.c ./src/video/dummy/*.c ./src/video/nds/*.c)
 OBJS = $(SRCS:.c=.o) 
-	
+
+TESTSRCS = $(shell echo ./test/*.c)
+TESTOBJS = $(TESTSRCS:.c=.o)
+TESTELFS = $(TESTOBJS:.o=.elf)
+TESTNDS = $(TESTELFS:.elf=.nds)
 
 SUBDIRS=
 
-CC=arm-eabi-gcc
-CXX=arm-eabi-g++ 
+CC=arm-none-eabi-gcc
+CXX=arm-none-eabi-g++
 LDSHARED=$(CXX)
-AR=arm-eabi-ar rc
-RANLIB=arm-eabi-ranlib 
+AR=arm-none-eabi-ar rc
+RANLIB=arm-none-eabi-ranlib
 
-CFLAGS	=	-mthumb -mthumb-interwork \
-		-march=armv5te -mtune=arm946e-s \
-		-O2 -Wall -Wwrite-strings -Wpointer-arith \
-		-DARM9 -D__NDS__ -I$(DEVKITPRO)/libnds/include -Iinclude
+ARCH = -mthumb -mthumb-interwork -march=armv5te -mtune=arm946e-s
+CFLAGS = $(ARCH) -O2 -Wall -Wwrite-strings -Wno-format -Wpointer-arith
+CPPFLAGS = -DARM9 -D__NDS__ -I$(DEVKITPRO)/libnds/include -Iinclude
+LDFLAGS = -specs=ds_arm9.specs -g $(ARCH) -L$(DEVKITPRO)/libnds/lib
+LIBS = -lnds9
 
 CXXFLAGS += $(CFLAGS)
 
-all: $(DEVKITPRO)/libnds/lib/libSDL.a       
+all: libSDL.a $(TESTNDS)
 
+test/%.nds: test/%.elf
+	@ndstool -c $@ -9 $< -b $(DEVKITPRO)/libnds/icon.bmp "$(notdir $@);Simple DirectMedia Layer example;built with devkitARM"
+	@echo built ... $(notdir $@)
 
-$(DEVKITPRO)/libnds/lib/libSDL.a:		$(OBJS)
+test/%.elf: test/%.o libSDL.a
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+libSDL.a: include/SDL_config.h $(OBJS)
 	$(AR) $@ $(OBJS)
-	-@ ($(RANLIB) $@ || true) >/dev/null 2>&1 	
+	$(RANLIB) $@
+
+include/SDL_config.h: include/SDL_config_nds.h
+	@echo "#include \"SDL_config_nds.h\"" > $@
+
+install: libSDL.a
+	@mkdir -p $(PORTLIBS)/include/SDL/
+	cp -r include/*.h $(PORTLIBS)/include/SDL/
+	cp -r libSDL.a $(PORTLIBS)/lib/libSDL.a
 
 clean: 
 	find . -name "*.o" |xargs rm -f
 	find . -name "*.d" |xargs rm -f
-	-rm -f *.elf
-	-rm -f *.nds
-	-rm -f *.gba
-	-rm -f *.arm9
-	-rm -f *.map
-	-rm -f *.img
-	-rm -Rf *.d
-
+	-rm -f include/SDL_config.h
+	-rm -f test/*.elf
+	-rm -f test/*.nds
 
 subdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 

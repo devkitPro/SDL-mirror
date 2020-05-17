@@ -172,7 +172,7 @@ int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	vformat->Rmask = 0x0000f800;
 	vformat->Gmask = 0x000007e0;
 	vformat->Bmask = 0x0000001f; 
-    powerON(POWER_ALL);
+	powerOn(POWER_ALL);
 	irqInit();
 	irqSet(IRQ_VBLANK, on_irq_vblank); 
 	irqEnable(IRQ_VBLANK);
@@ -200,10 +200,6 @@ int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	vramSetBankH(VRAM_H_SUB_BG);
 	vramSetBankI(VRAM_I_LCD);
     
-	////////////////set up text background for text/////////////////////
-    SUB_BG0_CR = BG_MAP_BASE(8);
-	
-	BG_PALETTE_SUB[255] = RGB15(31,31,31);//by default font will be rendered with color 255
 	///////////////set up our bitmap background///////////////////////
 
 	//BG3_CR = BG_BMP16_512x512;
@@ -219,9 +215,8 @@ int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
         BG3_CX = 0;
         BG3_CY = 0; 	
 		*/
-	//consoleInit() is a lot more flexible but this gets you up and running quick
-	consoleInitDefault((u16*)SCREEN_BASE_BLOCK_SUB(8), (u16*)CHAR_BASE_BLOCK_SUB(0), 16); 
-	
+
+	consoleInit(NULL, 0, BgType_Text4bpp, BgSize_T_256x256, 15, 0, false, true);
 
 	frontBuffer =(u16*)(0x06000000);
 	//backBuffer  =(u16*)(0x06000000 + 1024 * 512*2); 

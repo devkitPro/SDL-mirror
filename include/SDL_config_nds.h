@@ -90,7 +90,7 @@
 #define HAVE_SETJMP 1
 
 /* Enable various audio drivers */
-#define SDL_AUDIO_DRIVER_NDS	1
+/* #define SDL_AUDIO_DRIVER_NDS	1 */
 #define SDL_AUDIO_DRIVER_DUMMY	1
 
 /* Enable the stub cdrom driver (src/cdrom/dummy/\*.c) */
