@@ -160,8 +160,11 @@ SWITCH_VideoInit(_THIS)
 void
 SWITCH_VideoQuit(_THIS)
 {
-    if (_this->gl_config.driver_loaded) {
-        SDL_GL_UnloadLibrary();
+    // this should not be needed if user code is right (SDL_GL_LoadLibrary/SDL_GL_UnloadLibrary calls match)
+    // this (user) error doesn't have the same effect on switch thought, as the driver needs to be unloaded (crash)
+    if(_this->gl_config.driver_loaded > 0) {
+        SWITCH_GLES_UnloadLibrary(_this);
+        _this->gl_config.driver_loaded = 0;
     }
 
     // exit touch
