@@ -171,6 +171,8 @@ int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 
 	frontBuffer = (u16*)(0x06000000);
 
+	this->hidden->touchscreen = ((REG_POWERCNT & POWER_SWAP_LCDS) == 0);
+
 	/* We're done! */
 	return 0;
 }
@@ -253,6 +255,13 @@ SDL_Surface *NDS_SetVideoMode(_THIS, SDL_Surface *current,
 		backBuffer=(u16*)SDL_malloc(1024 * 512 * 2);
 		current->pixels = backBuffer; 
 	}
+
+	if (flags & SDL_BOTTOMSCR) {
+		lcdMainOnBottom();
+	} else if (flags & SDL_TOPSCR) {
+		lcdMainOnTop();
+	}
+	this->hidden->touchscreen = ((REG_POWERCNT & POWER_SWAP_LCDS) == 0);
 
 	/* We're done */
 	return current;

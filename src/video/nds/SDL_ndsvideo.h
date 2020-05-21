@@ -38,6 +38,7 @@ struct SDL_PrivateVideoData {
     void *buffer;
     short ndsmode;
     short secondbufferallocd;
+    SDL_bool touchscreen;
 };
 
 #endif /* _SDL_ndsvideo_h */
