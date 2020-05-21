@@ -22,7 +22,7 @@
 #include "SDL_config.h"
 
 #include <nds.h>
-#include <nds/registers_alt.h>
+
 #include "SDL.h"
 #include "SDL_error.h"
 #include "SDL_video.h"
@@ -163,7 +163,7 @@ int NDS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	//of the main display text backgrounds just as easily
 	videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE); //sub bg 0 will be used to print text
 
-	vramSetMainBanks(VRAM_A_MAIN_BG, VRAM_B_MAIN_BG, VRAM_C_MAIN_BG, VRAM_D_MAIN_BG);
+	vramSetPrimaryBanks(VRAM_A_MAIN_BG, VRAM_B_MAIN_BG, VRAM_C_MAIN_BG, VRAM_D_MAIN_BG);
 	vramSetBankH(VRAM_H_SUB_BG);
 	vramSetBankI(VRAM_I_LCD);
 
@@ -194,26 +194,26 @@ SDL_Surface *NDS_SetVideoMode(_THIS, SDL_Surface *current,
 
 		videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE);
 
-		vramSetMainBanks(VRAM_A_MAIN_BG, VRAM_B_MAIN_BG, VRAM_C_MAIN_BG, VRAM_D_MAIN_BG);
+		vramSetPrimaryBanks(VRAM_A_MAIN_BG, VRAM_B_MAIN_BG, VRAM_C_MAIN_BG, VRAM_D_MAIN_BG);
 
-		BG2_CR = BG_BMP16_512x512;
-		BG2_XDX = ((width / 256) << 8) | (width % 256) ;
-		BG2_XDY = 0;
-		BG2_YDX = 0;
-		BG2_YDY = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3) ;
-		BG2_CX = 0;
-		BG2_CY = 0;
+		REG_BG2CNT = BG_BMP16_512x512;
+		REG_BG2PA = ((width / 256) << 8) | (width % 256) ;
+		REG_BG2PB = 0;
+		REG_BG2PC = 0;
+		REG_BG2PD = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3) ;
+		REG_BG2X = 0;
+		REG_BG2Y = 0;
 	} else if (bpp <= 8) {
 		bpp=8;
 		Rmask = 0x00000000;
 		Gmask = 0x00000000;
 		Bmask = 0x00000000;
 
-		BG2_CR = BG_BMP8_1024x512;
-		BG2_XDX = ((width / 256) << 8) | (width % 256);
-		BG2_XDY = 0;
-		BG2_YDX = 0;
-		BG2_YDY = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3);
+		REG_BG2CNT = BG_BMP8_1024x512;
+		REG_BG2PA = ((width / 256) << 8) | (width % 256);
+		REG_BG2PB = 0;
+		REG_BG2PC = 0;
+		REG_BG2PD = ((height / 192) << 8) | ((height % 192) + (height % 192) / 3);
 	}
 
 	if(width<256) width=256;
@@ -284,8 +284,8 @@ static void NDS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 static int NDS_FlipHWSurface(_THIS, SDL_Surface *surface)
 {
 	if(this->hidden->secondbufferallocd){
-		while(DISP_Y!=192);
-		while(DISP_Y==192);
+		while(REG_VCOUNT!=192);
+		while(REG_VCOUNT==192);
 
 		dmaCopyAsynch(backBuffer,frontBuffer,1024*512);
 	}
