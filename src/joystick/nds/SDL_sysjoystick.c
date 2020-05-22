@@ -78,7 +78,7 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
  */
 void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 {
-	scanKeys();
+	/* scanKeys(); */
 	u32 keysd = keysDown();
 	u32 keysu = keysUp();
 

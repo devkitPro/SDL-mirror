@@ -35,8 +35,8 @@ char keymem[NDS_NUMKEYS];	/* memorize states of buttons */
 
 void NDS_PumpEvents(_THIS)
 {
-#if 0
 	scanKeys();
+#if 0
 	int i;
 	SDL_keysym keysym;
 	keysym.mod=KMOD_NONE;
@@ -57,11 +57,21 @@ void NDS_PumpEvents(_THIS)
 			SDL_PrivateKeyboard(SDL_PRESSED, &keysym);
 		}
 	}
-	//touchPosition touch;
-	//touch=touchReadXY();
-	//if (touch.px!=0 || touch.py!=0)
-	//	SDL_PrivateMouseMotion(SDL_PRESSED, 0, touch.px, touch.py);
 #endif
+
+	if (this->hidden->touchscreen) {
+		if (keysHeld() & KEY_TOUCH) {
+			touchPosition touch;
+			touchRead(&touch);
+			SDL_PrivateMouseMotion (0, 0, (touch.px * this->hidden->w) / 256, (touch.py * this->hidden->h) / 192);
+
+			if (!SDL_GetMouseState (NULL, NULL))
+				SDL_PrivateMouseButton (SDL_PRESSED, SDL_BUTTON_LEFT, 0, 0);
+		} else {
+			if (SDL_GetMouseState (NULL, NULL))
+				SDL_PrivateMouseButton (SDL_RELEASED, SDL_BUTTON_LEFT, 0, 0);
+		}
+	}
 }
 
 void NDS_InitOSKeymap(_THIS)
