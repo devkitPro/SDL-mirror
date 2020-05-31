@@ -65,9 +65,6 @@ void task_exit() {
     aptUnhook(&cookie);
 }
 
-static SDLKey keymap[N3DS_NUMKEYS];
-char keymem[N3DS_NUMKEYS];
-
 void N3DS_PumpEvents(_THIS)
 {
 	svcSleepThread(100000); // 0.1 ms
@@ -82,27 +79,6 @@ void N3DS_PumpEvents(_THIS)
 	} 
 	
 	hidScanInput();
-
-	int i;
-	SDL_keysym keysym;
-	keysym.mod = KMOD_NONE;
-
-	for (i = 0; i < N3DS_NUMKEYS; i++) {
-		keysym.scancode = i;
-		keysym.sym = keymap[i];
-
-		if (hidKeysHeld() & (1 << i) && !keymem[i]) {
-			keymem[i] = 1;
-
-			SDL_PrivateKeyboard (SDL_PRESSED, &keysym);
-		}
-
-		if (!(hidKeysHeld() & (1 << i)) && keymem[i]) {
-			keymem[i] = 0;
-
-			SDL_PrivateKeyboard (SDL_RELEASED, &keysym);
-		}
-	}
 
 	if (hidKeysHeld() & KEY_TOUCH) {
 		touchPosition touch;
@@ -134,53 +110,7 @@ void N3DS_PumpEvents(_THIS)
 
 void N3DS_InitOSKeymap(_THIS)
 {
-	SDL_memset(keymem,1,N3DS_NUMKEYS);
-	keymap[0]=SDLK_a; //KEY_A
-	keymap[1]=SDLK_b; // KEY_B
-	keymap[2]=SDLK_ESCAPE; //KEY_SELECT
-	keymap[3]=SDLK_RETURN; //KEY_START
-	keymap[4]=SDLK_RIGHT; //KEY_RIGHT
-	keymap[5]=SDLK_LEFT; //KEY_LEFT
-	keymap[6]=SDLK_UP; // KEY_UP
-	keymap[7]=SDLK_DOWN; //KEY_DOWN
-	keymap[8]=SDLK_r; //KEY_R
-	keymap[9]=SDLK_l; //KEY_L
-	keymap[10]=SDLK_x; //KEY_X 
-	keymap[11]=SDLK_y; //KEY_Y 
-	keymap[12]=SDLK_UNKNOWN; 
-	keymap[13]=SDLK_UNKNOWN; 
-	keymap[14]=SDLK_LSHIFT;  //KEY_ZL 
-	keymap[15]=SDLK_RSHIFT;  //KEY_ZR
-	keymap[16]=SDLK_UNKNOWN; 
-	keymap[17]=SDLK_UNKNOWN; 
-	keymap[18]=SDLK_UNKNOWN; 
-	keymap[19]=SDLK_UNKNOWN; 
-	keymap[20]=SDLK_UNKNOWN; 
-	keymap[21]=SDLK_UNKNOWN; 
-	keymap[22]=SDLK_UNKNOWN; 
-	keymap[23]=SDLK_UNKNOWN; 
-	keymap[24]=SDLK_UNKNOWN; 
-	keymap[25]=SDLK_UNKNOWN; 
-	keymap[26]=SDLK_UNKNOWN; 
-	keymap[27]=SDLK_UNKNOWN; 
-	keymap[28]=SDLK_UNKNOWN; 
-	keymap[29]=SDLK_UNKNOWN; 
-	keymap[30]=SDLK_UNKNOWN; 
-	keymap[31]=SDLK_UNKNOWN; 
-
-// init the key state
-	int i;
-	hidScanInput();
-	for (i = 0; i < N3DS_NUMKEYS; i++)
-		keymem[i] = (hidKeysHeld() & (1 << i))?1:0;
-}
-
-void SDL_N3DSKeyBind(unsigned int hidkey, SDLKey key) {
-	int i,pos;
-	for (i = 0; i < N3DS_NUMKEYS; i++) {
-		pos= 1<<i;
-		if(hidkey&pos) keymap[i]=key;
-	}
+	// Do nothing
 }
 
 
