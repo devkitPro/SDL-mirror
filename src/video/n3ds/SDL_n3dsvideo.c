@@ -611,7 +611,10 @@ static int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
 	Uint32* palette = this->hidden->palette;
 
 	for (i = firstcolor; i < firstcolor + ncolors; i++)
-		palette[i] = N3DS_MAP_RGB(colors[i].r, colors[i].g, colors[i].b);
+	{
+		int colorIndex = i - firstcolor;
+		palette[i] = N3DS_MAP_RGB(colors[colorIndex].r, colors[colorIndex].g, colors[colorIndex].b);
+	}
 
 	return(1);
 }
