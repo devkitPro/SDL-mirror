@@ -30,7 +30,11 @@
 #include "../SDL_sysjoystick.h"
 #include "../SDL_joystick_c.h"
 
-#include "../../video/nds/SDL_ndsevents_c.h"
+/* The private structure used to keep track of a joystick */
+struct joystick_hwdata
+{
+	u32 prev_keys;
+};
 
 /* Function to scan the system for joysticks.
  * This function should set SDL_numjoysticks to the number of available
@@ -62,10 +66,19 @@ const char *SDL_SYS_JoystickName(int index)
  */
 int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 {
+	/* allocate memory for system specific hardware data */
+	joystick->hwdata = (struct joystick_hwdata *) SDL_malloc(sizeof(*joystick->hwdata));
+	if (joystick->hwdata == NULL)
+	{
+		SDL_OutOfMemory();
+		return(-1);
+	}
+	SDL_memset(joystick->hwdata, 0, sizeof(*joystick->hwdata));
+
 	joystick->nbuttons=8;
-	joystick->nhats=0;
+	joystick->nhats=1;
 	joystick->nballs=0;
-	joystick->naxes=2;
+	joystick->naxes=0;
 
 	return 0;
 }
@@ -78,94 +91,43 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
  */
 void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 {
-	/* scanKeys(); */
-	u32 keysd = keysDown();
-	u32 keysu = keysUp();
+	const int sdl_buttons[] = {
+		KEY_A, KEY_B, KEY_X, KEY_Y, KEY_L, KEY_R, KEY_SELECT, KEY_START
+	};
 
-	if ((keysd & KEY_UP)) {
-		SDL_PrivateJoystickAxis(joystick, 1, -10);
-	}
-	if ((keysd & KEY_DOWN)) {
-		SDL_PrivateJoystickAxis(joystick, 1, 10);
-	}
-	if ((keysd & KEY_LEFT)) {
-		SDL_PrivateJoystickAxis(joystick, 0, -10);
-	}
-	if ((keysd & KEY_RIGHT)) {
-		SDL_PrivateJoystickAxis(joystick, 0, 10);
-	}
+	u32 keys = keysCurrent();
+	u32 changed = (keys ^ joystick->hwdata->prev_keys);
 
-	if ((keysu & KEY_UP)) {
-		SDL_PrivateJoystickAxis(joystick, 1, 0);
-	}
-	if ((keysu & KEY_DOWN)) {
-		SDL_PrivateJoystickAxis(joystick, 1, 0);
-	}
-	if ((keysu & KEY_LEFT)) {
-		SDL_PrivateJoystickAxis(joystick, 0, 0);
-	}
-	if ((keysu & KEY_RIGHT)) {
-		SDL_PrivateJoystickAxis(joystick, 0, 0);
+	int i;
+
+	if (changed & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT)) {
+		int hat = SDL_HAT_CENTERED;
+		if (keys & KEY_UP) hat |= SDL_HAT_UP;
+		if (keys & KEY_DOWN) hat |= SDL_HAT_DOWN;
+		if (keys & KEY_LEFT) hat |= SDL_HAT_LEFT;
+		if (keys & KEY_RIGHT) hat |= SDL_HAT_RIGHT;
+		SDL_PrivateJoystickHat(joystick, 0, hat);
 	}
 
-	if ((keysd & KEY_A)) {
-		SDL_PrivateJoystickButton(joystick, 0, SDL_PRESSED);
-	}
-	if ((keysd & KEY_B)) {
-		SDL_PrivateJoystickButton(joystick, 1, SDL_PRESSED);
-	}
-	if ((keysd & KEY_X)) {
-		SDL_PrivateJoystickButton(joystick, 2, SDL_PRESSED);
-	}
-	if ((keysd & KEY_Y)) {
-		SDL_PrivateJoystickButton(joystick, 3, SDL_PRESSED);
-	}
-	if ((keysd & KEY_SELECT)) {
-		SDL_PrivateJoystickButton(joystick, 6, SDL_PRESSED);
-	}
-	if ((keysd & KEY_START)) {
-		SDL_PrivateJoystickButton(joystick, 7, SDL_PRESSED);
-	}
-	if ((keysd & KEY_L)) {
-		SDL_PrivateJoystickButton(joystick, 4, SDL_PRESSED);
-	}
-	if ((keysd & KEY_R)) {
-		SDL_PrivateJoystickButton(joystick, 5, SDL_PRESSED);
+	for (i = 0; i < SDL_arraysize(sdl_buttons); i++) {
+		if (changed & sdl_buttons[i]) {
+			SDL_PrivateJoystickButton(joystick, i, (keys & sdl_buttons[i]) ? SDL_PRESSED : SDL_RELEASED);
+		}
 	}
 
-	if ((keysu & KEY_A)) {
-		SDL_PrivateJoystickButton(joystick, 0, SDL_RELEASED);
-	}
-	if ((keysu & KEY_B)) {
-		SDL_PrivateJoystickButton(joystick, 1, SDL_RELEASED);
-	}
-	if ((keysu & KEY_X)) {
-		SDL_PrivateJoystickButton(joystick, 2, SDL_RELEASED);
-	}
-	if ((keysu & KEY_Y)) {
-		SDL_PrivateJoystickButton(joystick, 3, SDL_RELEASED);
-	}
-	if ((keysu & KEY_SELECT)) {
-		SDL_PrivateJoystickButton(joystick, 6, SDL_RELEASED);
-	}
-	if ((keysu & KEY_START)) {
-		SDL_PrivateJoystickButton(joystick, 7, SDL_RELEASED);
-	}
-	if ((keysu & KEY_L)) {
-		SDL_PrivateJoystickButton(joystick, 4, SDL_RELEASED);
-	}
-	if ((keysu & KEY_R)) {
-		SDL_PrivateJoystickButton(joystick, 5, SDL_RELEASED);
-	}
+	joystick->hwdata->prev_keys = keys;
 }
 
 /* Function to close a joystick after use */
 void SDL_SYS_JoystickClose(SDL_Joystick *joystick)
 {
+	if (joystick->hwdata != NULL) {
+		/* free system specific hardware data */
+		SDL_free(joystick->hwdata);
+	}
 }
 
 /* Function to perform any system-specific joystick related cleanup */
 void SDL_SYS_JoystickQuit(void)
 {
 }
-
