@@ -29,7 +29,5 @@
 extern void NDS_InitOSKeymap(_THIS);
 extern void NDS_PumpEvents(_THIS);
 
-#define NDS_NUMKEYS 12
-
 /* end of SDL_NDSevents_c.h ... */
 
