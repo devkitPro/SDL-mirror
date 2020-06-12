@@ -21,8 +21,8 @@
 */
 #include "SDL_config.h"
 
-#ifndef _SDL_lowaudio_h
-#define _SDL_lowaudio_h
+#ifndef _SDL_maxmodaudio_h
+#define _SDL_maxmodaudio_h
 
 #include "../SDL_sysaudio.h"
 
@@ -30,11 +30,6 @@
 #define _THIS	SDL_AudioDevice *this
 
 struct SDL_PrivateAudioData {
-	/* The file descriptor for the audio device */
-	//Uint8 *mixbuf;
-	//Uint32 mixlen;
-}; 
-unsigned short SDL_NDSAudio_mutex=0; 
- 
+};
 
-#endif /* _SDL_lowaudio_h */
+#endif /* _SDL_maxmodaudio_h */

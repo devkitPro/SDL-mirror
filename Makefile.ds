@@ -11,7 +11,7 @@ endif
 PORTLIBS := $(DEVKITPRO)/portlibs/nds
 
 
-SRCS = $(shell echo ./src/*.c ./src/audio/*.c ./src/cdrom/*.c ./src/cpuinfo/*.c ./src/events/*.c ./src/file/*.c ./src/stdlib/*.c ./src/thread/*.c ./src/timer/*.c ./src/video/*.c ./src/joystick/*.c ./src/joystick/nds/*.c ./src/cdrom/dummy/*.c ./src/thread/generic/*.c ./src/timer/nds/*.c ./src/loadso/dummy/*.c ./src/audio/dummy/*.c ./src/video/dummy/*.c ./src/video/nds/*.c)
+SRCS = $(shell echo ./src/*.c ./src/audio/*.c ./src/cdrom/*.c ./src/cpuinfo/*.c ./src/events/*.c ./src/file/*.c ./src/stdlib/*.c ./src/thread/*.c ./src/timer/*.c ./src/video/*.c ./src/joystick/*.c ./src/joystick/nds/*.c ./src/cdrom/dummy/*.c ./src/thread/generic/*.c ./src/timer/nds/*.c ./src/loadso/dummy/*.c ./src/audio/maxmod/*.c ./src/video/dummy/*.c ./src/video/nds/*.c)
 OBJS = $(SRCS:.c=.o) 
 
 TESTSRCS = $(shell echo ./test/*.c)
@@ -31,7 +31,7 @@ ARCH = -mthumb -mthumb-interwork -march=armv5te -mtune=arm946e-s
 CFLAGS = $(ARCH) -O2 -Wall -Wwrite-strings -Wno-format -Wpointer-arith
 CPPFLAGS = -DARM9 -D__NDS__ -I$(DEVKITPRO)/libnds/include -Iinclude
 LDFLAGS = -specs=ds_arm9.specs -g $(ARCH) -L$(DEVKITPRO)/libnds/lib
-LIBS = -lnds9
+LIBS = -lmm9 -lnds9
 
 CXXFLAGS += $(CFLAGS)
 
