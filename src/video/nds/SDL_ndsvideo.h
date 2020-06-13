@@ -34,11 +34,9 @@
 /* Private display data */
 
 struct SDL_PrivateVideoData {
-    int w, h;
-    void *buffer;
-    short ndsmode;
-    short secondbufferallocd;
-    SDL_bool touchscreen;
+	int w, h;
+	void *frontBuffer, *backBuffer;
+	SDL_bool touchscreen;
 };
 
 #endif /* _SDL_ndsvideo_h */
