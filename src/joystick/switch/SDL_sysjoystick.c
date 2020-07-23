@@ -24,6 +24,7 @@
 
 /* This is the dummy implementation of the SDL joystick API */
 
+#include "SDL_hints.h"
 #include "SDL_events.h"
 #include "../SDL_sysjoystick.h"
 
@@ -60,7 +61,9 @@ static const HidControllerKeys pad_mapping[] = {
         KEY_DLEFT, KEY_DUP, KEY_DRIGHT, KEY_DDOWN,
         KEY_LSTICK_LEFT, KEY_LSTICK_UP, KEY_LSTICK_RIGHT, KEY_LSTICK_DOWN,
         KEY_RSTICK_LEFT, KEY_RSTICK_UP, KEY_RSTICK_RIGHT, KEY_RSTICK_DOWN,
-        KEY_SL_LEFT, KEY_SR_LEFT, KEY_SL_RIGHT, KEY_SR_RIGHT
+        KEY_SL_LEFT, KEY_SR_LEFT, KEY_SL_RIGHT, KEY_SR_RIGHT,
+        // Generic catch-all directions, also works for single Joy-Con
+        KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_SL, KEY_SR, KEY_PLUS | KEY_MINUS
 };
 
 /* Function to scan the system for joysticks.
@@ -165,6 +168,51 @@ SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint
     return 0;
 }
 
+static void
+SWITCH_HandleSingleJoycons(int mode)
+{
+    // handle single joycon's states (@ rsn8887)
+    static int previous_single_joycon_mode = -1;
+    static int previous_handheld_mode = -1;
+    int lastRightId = 8;
+    int handheld_mode = hidGetHandheldMode();
+
+    if ((mode != previous_single_joycon_mode) || (handheld_mode != previous_handheld_mode)) {
+        previous_handheld_mode = handheld_mode;
+        previous_single_joycon_mode = mode;
+        if (!handheld_mode) {
+            if (mode) {
+                for (int id = 0; id < 8; id++) {
+                    hidSetNpadJoyAssignmentModeSingleByDefault((HidControllerID) id);
+                }
+                hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+                hidScanInput();
+            } else {
+                // find all left/right single JoyCon pairs and join them together
+                for (int id = 0; id < 8; id++) {
+                    hidSetNpadJoyAssignmentModeDual((HidControllerID) id);
+                }
+                for (int id0 = 0; id0 < 8; id0++) {
+                    if (hidGetControllerType((HidControllerID) id0) & TYPE_JOYCON_LEFT) {
+                        for (int id1 = lastRightId - 1; id1 >= 0; id1--) {
+                            if (hidGetControllerType((HidControllerID) id1) & TYPE_JOYCON_RIGHT) {
+                                lastRightId = id1;
+                                // prevent missing player numbers
+                                if (id0 < id1) {
+                                    hidMergeSingleJoyAsDualJoy((HidControllerID) id0, (HidControllerID) id1);
+                                } else if (id0 > id1) {
+                                    hidMergeSingleJoyAsDualJoy((HidControllerID) id1, (HidControllerID) id0);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* Function to update the state of a joystick - called as a device poll.
  * This function shouldn't update the joystick structure directly,
  * but instead should call SDL_PrivateJoystick*() to deliver events
@@ -173,8 +221,9 @@ SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint
 static void
 SWITCH_JoystickUpdate(SDL_Joystick *joystick)
 {
-    u64 changed;
+    u64 changed = 0;
     static JoystickState pad_old[JOYSTICK_COUNT];
+    const char *single_joycons_hint = NULL;
 
     int index = (int) SDL_JoystickInstanceID(joystick);
     if (index > JOYSTICK_COUNT || SDL_IsTextInputActive()) {
@@ -214,6 +263,12 @@ SWITCH_JoystickUpdate(SDL_Joystick *joystick)
                         (Uint8) ((pad[index].buttons & pad_mapping[i]) ? SDL_PRESSED : SDL_RELEASED));
             }
         }
+    }
+
+    // handle single joycons mode
+    single_joycons_hint = SDL_GetHint("SDL_HINT_SINGLE_JOYCONS_MODE");
+    if(single_joycons_hint != NULL) {
+        SWITCH_HandleSingleJoycons(SDL_strncmp(single_joycons_hint, "1", 1) == 0);
     }
 }
 
