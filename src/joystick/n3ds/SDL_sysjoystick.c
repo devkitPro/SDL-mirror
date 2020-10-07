@@ -13,6 +13,7 @@
 int old_x = 0, old_y = 0;
 int old_cs_x = 0, old_cs_y = 0;
 u32 key_press, key_release = 0;
+int old_dpad_state = 0;
 
 int SDL_SYS_JoystickInit (void) {
 	SDL_numjoysticks = 1;
@@ -30,8 +31,8 @@ const char *SDL_SYS_JoystickName (int index) {
 }
 
 int SDL_SYS_JoystickOpen(SDL_Joystick *joystick) {
-	joystick->nbuttons = 14;
-	joystick->nhats = 0;
+	joystick->nbuttons = 10;
+	joystick->nhats = 1;
 	joystick->nballs = 0;
 	joystick->naxes = 4;
 
@@ -81,6 +82,7 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 	}
 
 	key_press = hidKeysDown ();
+	int dpad_state = old_dpad_state;
 	if ((key_press & KEY_A)) {
 		SDL_PrivateJoystickButton (joystick, 1, SDL_PRESSED);
 	}
@@ -106,22 +108,22 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 		SDL_PrivateJoystickButton (joystick, 6, SDL_PRESSED);
 	}
 	if ((key_press & KEY_DDOWN)) {
-		SDL_PrivateJoystickButton (joystick, 8, SDL_PRESSED);
+		dpad_state |= SDL_HAT_DOWN;
 	}
 	if ((key_press & KEY_DLEFT)) {
-		SDL_PrivateJoystickButton (joystick, 9, SDL_PRESSED);
+		dpad_state |= SDL_HAT_LEFT;
 	}
 	if ((key_press & KEY_DUP)) {
-		SDL_PrivateJoystickButton (joystick, 10, SDL_PRESSED);
+		dpad_state |= SDL_HAT_UP;
 	}
 	if ((key_press & KEY_DRIGHT)) {
-		SDL_PrivateJoystickButton (joystick, 11, SDL_PRESSED);
+		dpad_state |= SDL_HAT_RIGHT;
 	}
 	if ((key_press & KEY_ZL)) {
-		SDL_PrivateJoystickButton (joystick, 12, SDL_PRESSED);
+		SDL_PrivateJoystickButton (joystick, 8, SDL_PRESSED);
 	}
 	if ((key_press & KEY_ZR)) {
-		SDL_PrivateJoystickButton (joystick, 13, SDL_PRESSED);
+		SDL_PrivateJoystickButton (joystick, 9, SDL_PRESSED);
 	}
 
 	key_release = hidKeysUp ();
@@ -150,22 +152,27 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 		SDL_PrivateJoystickButton (joystick, 6, SDL_RELEASED);
 	}
 	if ((key_release & KEY_DDOWN)) {
-		SDL_PrivateJoystickButton (joystick, 8, SDL_RELEASED);
+		dpad_state &= ~SDL_HAT_DOWN;
 	}
 	if ((key_release & KEY_DLEFT)) {
-		SDL_PrivateJoystickButton (joystick, 9, SDL_RELEASED);
+		dpad_state &= ~SDL_HAT_LEFT;
 	}
 	if ((key_release & KEY_DUP)) {
-		SDL_PrivateJoystickButton (joystick, 10, SDL_RELEASED);
+		dpad_state &= ~SDL_HAT_UP;
 	}
 	if ((key_release & KEY_DRIGHT)) {
-		SDL_PrivateJoystickButton (joystick, 11, SDL_RELEASED);
+		dpad_state &= ~SDL_HAT_RIGHT;
 	}
 	if ((key_release & KEY_ZL)) {
-		SDL_PrivateJoystickButton (joystick, 12, SDL_RELEASED);
+		SDL_PrivateJoystickButton (joystick, 8, SDL_RELEASED);
 	}
 	if ((key_release & KEY_ZR)) {
-		SDL_PrivateJoystickButton (joystick, 13, SDL_RELEASED);
+		SDL_PrivateJoystickButton (joystick, 9, SDL_RELEASED);
+	}
+
+	if (dpad_state != old_dpad_state) {
+		old_dpad_state = dpad_state;
+		SDL_PrivateJoystickHat (joystick, 0, dpad_state);
 	}
 }
 
