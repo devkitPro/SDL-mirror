@@ -12,6 +12,7 @@
 
 int old_x = 0, old_y = 0;
 u32 key_press, key_release = 0;
+int old_cstick_state = 0;
 
 int SDL_SYS_JoystickInit (void) {
 	SDL_numjoysticks = 1;
@@ -30,7 +31,7 @@ const char *SDL_SYS_JoystickName (int index) {
 
 int SDL_SYS_JoystickOpen(SDL_Joystick *joystick) {
 	joystick->nbuttons = 14;
-	joystick->nhats = 0;
+	joystick->nhats = 1;
 	joystick->nballs = 0;
 	joystick->naxes = 2;
 
@@ -63,6 +64,7 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 	}
 
 	key_press = hidKeysDown ();
+	int cstick_state = old_cstick_state;
 	if ((key_press & KEY_A)) {
 		SDL_PrivateJoystickButton (joystick, 1, SDL_PRESSED);
 	}
@@ -104,6 +106,18 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 	}
 	if ((key_press & KEY_ZR)) {
 		SDL_PrivateJoystickButton (joystick, 13, SDL_PRESSED);
+	}
+	if ((key_press & KEY_CSTICK_DOWN)) {
+		cstick_state |= SDL_HAT_DOWN;
+	}
+	if ((key_press & KEY_CSTICK_LEFT)) {
+		cstick_state |= SDL_HAT_LEFT;
+	}
+	if ((key_press & KEY_CSTICK_UP)) {
+		cstick_state |= SDL_HAT_UP;
+	}
+	if ((key_press & KEY_CSTICK_RIGHT)) {
+		cstick_state |= SDL_HAT_RIGHT;
 	}
 
 	key_release = hidKeysUp ();
@@ -148,6 +162,23 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 	}
 	if ((key_release & KEY_ZR)) {
 		SDL_PrivateJoystickButton (joystick, 13, SDL_RELEASED);
+	}
+	if ((key_release & KEY_CSTICK_DOWN)) {
+		cstick_state &= ~SDL_HAT_DOWN;
+	}
+	if ((key_release & KEY_CSTICK_LEFT)) {
+		cstick_state &= ~SDL_HAT_LEFT;
+	}
+	if ((key_release & KEY_CSTICK_UP)) {
+		cstick_state &= ~SDL_HAT_UP;
+	}
+	if ((key_release & KEY_CSTICK_RIGHT)) {
+		cstick_state &= ~SDL_HAT_RIGHT;
+	}
+
+	if (cstick_state != old_cstick_state) {
+		old_cstick_state = cstick_state;
+		SDL_PrivateJoystickHat (joystick, 0, cstick_state);
 	}
 }
 
