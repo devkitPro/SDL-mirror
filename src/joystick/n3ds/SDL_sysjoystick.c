@@ -13,7 +13,6 @@
 int old_x = 0, old_y = 0;
 int old_cs_x = 0, old_cs_y = 0;
 u32 key_press, key_release = 0;
-extern void irrstCstickRead(circlePosition* pos);
 
 int SDL_SYS_JoystickInit (void) {
 	SDL_numjoysticks = 1;
