@@ -46,17 +46,17 @@ void
 SWITCH_InitMouse(void)
 {
     SDL_Mouse *mouse = SDL_GetMouse();
-
     mouse->SetRelativeMouseMode = SWITCH_SetRelativeMouseMode;
+    hidInitializeMouse();
 }
 
 void 
 SWITCH_PollMouse(void)
 {
 	SDL_Window *window = SDL_GetFocusWindow();
-	uint64_t buttons;
-	uint64_t changed_buttons;
-	MousePosition mouse_pos;
+    HidMouseState mouse_state;
+    size_t state_count;
+    uint64_t changed_buttons;
 	uint64_t timestamp;
 	int dx, dy;
 
@@ -64,42 +64,46 @@ SWITCH_PollMouse(void)
 	if (window == NULL)
 		return;
 
-	buttons = hidMouseButtonsHeld();
-	changed_buttons = buttons ^ prev_buttons;
+	//buttons = hidMouseButtonsHeld();
+    state_count = hidGetMouseStates(&mouse_state, 1);
+	changed_buttons = mouse_state.buttons ^ prev_buttons;
 
-	if (changed_buttons & MOUSE_LEFT) {
-		if (prev_buttons & MOUSE_LEFT)
+	if (changed_buttons & HidMouseButton_Left) {
+		if (prev_buttons & HidMouseButton_Left)
 			SDL_SendMouseButton(window, 0, SDL_RELEASED, SDL_BUTTON_LEFT);
 		else
 			SDL_SendMouseButton(window, 0, SDL_PRESSED, SDL_BUTTON_LEFT);
 	}
-	if (changed_buttons & MOUSE_RIGHT) {
-		if (prev_buttons & MOUSE_RIGHT)
+	if (changed_buttons & HidMouseButton_Right) {
+		if (prev_buttons & HidMouseButton_Right)
 			SDL_SendMouseButton(window, 0, SDL_RELEASED, SDL_BUTTON_RIGHT);
 		else
 			SDL_SendMouseButton(window, 0, SDL_PRESSED, SDL_BUTTON_RIGHT);
 	}
-	if (changed_buttons & MOUSE_MIDDLE) {
-		if (prev_buttons & MOUSE_MIDDLE)
+	if (changed_buttons & HidMouseButton_Middle) {
+		if (prev_buttons & HidMouseButton_Middle)
 			SDL_SendMouseButton(window, 0, SDL_RELEASED, SDL_BUTTON_MIDDLE);
 		else
 			SDL_SendMouseButton(window, 0, SDL_PRESSED, SDL_BUTTON_MIDDLE);
 	}
 
-	prev_buttons = buttons;
+	prev_buttons = mouse_state.buttons;
 
 	timestamp = SDL_GetTicks();
 
 	if (SDL_TICKS_PASSED(timestamp, last_timestamp + mouse_read_interval)) {
-		hidMouseRead(&mouse_pos);
+		//hidMouseRead(&mouse_pos);
+
 		// if hidMouseRead is called once per frame, a factor two on the velocities
 		// results in approximately the same mouse motion as reported by mouse_pos.x and mouse_pos.y
 		// but without the clamping to 1280 x 720
-		dx = mouse_pos.velocityX * 2;
-		dy = mouse_pos.velocityY * 2;
-		if (dx || dy) {
-			SDL_SendMouseMotion(window, 0, 1, dx, dy);
-		}
+		if(state_count > 0) {
+            dx = mouse_state.x * 2;
+            dy = mouse_state.y * 2;
+            if (dx || dy) {
+                SDL_SendMouseMotion(window, 0, 1, dx, dy);
+            }
+        }
 		last_timestamp = timestamp;
 	}
 }

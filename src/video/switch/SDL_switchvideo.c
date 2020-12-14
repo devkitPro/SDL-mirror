@@ -355,7 +355,7 @@ SWITCH_PumpEvents(_THIS)
         return;
     }
 
-    hidScanInput();
+    //hidScanInput();
     // we don't want other inputs overlapping with software keyboard
     if(!SDL_IsTextInputActive()) {
         SWITCH_PollTouch();
