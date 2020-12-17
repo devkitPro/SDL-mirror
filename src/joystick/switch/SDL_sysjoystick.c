@@ -37,27 +37,12 @@ typedef struct SWITCHJoystickState
     u64 buttons;
     HidAnalogStickState stick_l;
     HidAnalogStickState stick_r;
-    /*
-    HidControllerID id;
-    JoystickPosition l_pos;
-    JoystickPosition r_pos;
-    u64 buttons;
-    u32 vibrationDeviceHandles[2][2];
+    HidVibrationDeviceHandle vibrationDeviceHandles[2][2];
     HidVibrationValue vibrationValues[2];
-    */
 } SWITCHJoystickState;
 
 /* Current pad state */
 static SWITCHJoystickState joystickState[JOYSTICK_COUNT];
-
-/*
-static HidControllerID pad_id[JOYSTICK_COUNT] = {
-        CONTROLLER_P1_AUTO, CONTROLLER_PLAYER_2,
-        CONTROLLER_PLAYER_3, CONTROLLER_PLAYER_4,
-        CONTROLLER_PLAYER_5, CONTROLLER_PLAYER_6,
-        CONTROLLER_PLAYER_7, CONTROLLER_PLAYER_8
-};
-*/
 
 static const HidNpadButton pad_mapping[] = {
         HidNpadButton_A, HidNpadButton_B, HidNpadButton_X, HidNpadButton_Y,
@@ -77,20 +62,22 @@ static const HidNpadButton pad_mapping[] = {
 static int
 SWITCH_JoystickInit(void)
 {
-    /*
-    for (int i = 0; i < JOYSTICK_COUNT; i++) {
-        pad[i].id = pad_id[i];
-        hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[0], 2, CONTROLLER_HANDHELD, TYPE_HANDHELD);
-        if(pad[i].id == CONTROLLER_P1_AUTO) {
-            hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[1], 2, CONTROLLER_PLAYER_1, TYPE_HANDHELD);
-        } else {
-            hidInitializeVibrationDevices(pad[i].vibrationDeviceHandles[1], 2, pad[i].id, TYPE_JOYCON_PAIR);
-        }
-    }
-    */
     padConfigureInput(JOYSTICK_COUNT, HidNpadStyleSet_NpadStandard);
-    for (int i = 0; i < JOYSTICK_COUNT; i++) {
-        padInitializeDefault(&joystickState[i].pad);
+
+    padInitializeDefault(&joystickState[0].pad);
+    hidInitializeVibrationDevices(joystickState[0].vibrationDeviceHandles[0],2,
+                                  HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
+    hidInitializeVibrationDevices(joystickState[0].vibrationDeviceHandles[1], 2,
+                                  HidNpadIdType_No1, joystickState[0].pad.active_handheld ?
+                                  HidNpadStyleTag_NpadHandheld : HidNpadStyleTag_NpadJoyDual);
+
+    for (int i = 1; i < JOYSTICK_COUNT - 1; i++) {
+        padInitialize(&joystickState[i].pad, HidNpadIdType_No1 + i);
+        hidInitializeVibrationDevices(joystickState[i].vibrationDeviceHandles[0],2,
+                                      HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
+        hidInitializeVibrationDevices(joystickState[i].vibrationDeviceHandles[1], 2,
+                                      HidNpadIdType_No1 + i, joystickState[i].pad.active_handheld ?
+                                      HidNpadStyleTag_NpadHandheld : HidNpadStyleTag_NpadJoyDual);
     }
 
     return JOYSTICK_COUNT;
@@ -162,22 +149,23 @@ SWITCH_JoystickOpen(SDL_Joystick *joystick, int device_index)
 static int
 SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
 {
-    // TODO
-    /*
     int target_device = 0;
     int id = joystick->instance_id;
 
-    if (!hidGetHandheldMode()) {
+    if (!padIsHandheld(&joystickState[id].pad)) {
         target_device = 1;
     }
 
-    pad[id].vibrationValues[0].amp_low = pad[id].vibrationValues[0].amp_high = low_frequency_rumble == 0 ? 0.0f : 320.0f;
-    pad[id].vibrationValues[0].freq_low = low_frequency_rumble == 0 ? 160.0f : (float) low_frequency_rumble / 204;
-    pad[id].vibrationValues[0].freq_high = high_frequency_rumble == 0 ? 320.0f : (float) high_frequency_rumble / 204;
-    memcpy(&pad[id].vibrationValues[1], &pad[id].vibrationValues[0], sizeof(HidVibrationValue));
+    joystickState[id].vibrationValues[0].amp_low =
+            joystickState[id].vibrationValues[0].amp_high = low_frequency_rumble == 0 ? 0.0f : 320.0f;
+    joystickState[id].vibrationValues[0].freq_low =
+            low_frequency_rumble == 0 ? 160.0f : (float) low_frequency_rumble / 204;
+    joystickState[id].vibrationValues[0].freq_high =
+            high_frequency_rumble == 0 ? 320.0f : (float) high_frequency_rumble / 204;
+    memcpy(&joystickState[id].vibrationValues[1], &joystickState[id].vibrationValues[0], sizeof(HidVibrationValue));
 
-    hidSendVibrationValues(pad[id].vibrationDeviceHandles[target_device], pad[id].vibrationValues, 2);
-    */
+    hidSendVibrationValues(joystickState[id].vibrationDeviceHandles[target_device],
+                           joystickState[id].vibrationValues, 2);
 
     return 0;
 }
