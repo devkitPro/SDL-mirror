@@ -37,11 +37,10 @@ typedef struct SWITCHJoystickState
     u64 buttons;
     HidAnalogStickState stick_l;
     HidAnalogStickState stick_r;
-    HidVibrationDeviceHandle vibrationDeviceHandles[2][2];
-    HidVibrationValue vibrationValues[2];
+    HidVibrationDeviceHandle vibrationDeviceHandles;
+    HidVibrationValue vibrationValues;
 } SWITCHJoystickState;
 
-/* Current pad state */
 static SWITCHJoystickState joystickState[JOYSTICK_COUNT];
 
 static const HidNpadButton pad_mapping[] = {
@@ -64,21 +63,28 @@ SWITCH_JoystickInit(void)
 {
     padConfigureInput(JOYSTICK_COUNT, HidNpadStyleSet_NpadStandard);
 
+    // initialize first pad to defaults
     padInitializeDefault(&joystickState[0].pad);
-    hidInitializeVibrationDevices(joystickState[0].vibrationDeviceHandles[0],2,
-                                  HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
-    hidInitializeVibrationDevices(joystickState[0].vibrationDeviceHandles[1], 2,
-                                  HidNpadIdType_No1, joystickState[0].pad.active_handheld ?
-                                  HidNpadStyleTag_NpadHandheld : HidNpadStyleTag_NpadJoyDual);
+    padUpdate(&joystickState[0].pad);
 
-    for (int i = 1; i < JOYSTICK_COUNT - 1; i++) {
+    // initialize pad and vibrations for pad 1 to 7
+    for (int i = 1; i < JOYSTICK_COUNT; i++) {
         padInitialize(&joystickState[i].pad, HidNpadIdType_No1 + i);
-        hidInitializeVibrationDevices(joystickState[i].vibrationDeviceHandles[0],2,
-                                      HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
-        hidInitializeVibrationDevices(joystickState[i].vibrationDeviceHandles[1], 2,
-                                      HidNpadIdType_No1 + i, joystickState[i].pad.active_handheld ?
-                                      HidNpadStyleTag_NpadHandheld : HidNpadStyleTag_NpadJoyDual);
+        padUpdate(&joystickState[i].pad);
+        // we have two or more joycons detected in dual mode, assume we want single joycon mode
+        if(padGetStyleSet(&joystickState[i].pad) & HidNpadStyleTag_NpadJoyDual) {
+            hidSetNpadJoyAssignmentModeSingleByDefault(HidNpadIdType_No1);
+            hidSetNpadJoyAssignmentModeSingleByDefault(HidNpadIdType_No1 + i);
+            hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
+        }
+        hidInitializeVibrationDevices(&joystickState[i].vibrationDeviceHandles,1,
+                                      HidNpadIdType_No1 + i, padGetStyleSet(&joystickState[i].pad));
     }
+
+    // finally, initialize first pad vibrations, style may have changed since pad init
+    hidInitializeVibrationDevices(&joystickState[0].vibrationDeviceHandles,1,
+                                  padIsHandheld(&joystickState[0].pad) ? HidNpadIdType_Handheld : HidNpadIdType_No1,
+                                  padGetStyleSet(&joystickState[0].pad));
 
     return JOYSTICK_COUNT;
 }
@@ -149,23 +155,16 @@ SWITCH_JoystickOpen(SDL_Joystick *joystick, int device_index)
 static int
 SWITCH_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
 {
-    int target_device = 0;
     int id = joystick->instance_id;
 
-    if (!padIsHandheld(&joystickState[id].pad)) {
-        target_device = 1;
-    }
-
-    joystickState[id].vibrationValues[0].amp_low =
-            joystickState[id].vibrationValues[0].amp_high = low_frequency_rumble == 0 ? 0.0f : 320.0f;
-    joystickState[id].vibrationValues[0].freq_low =
+    joystickState[id].vibrationValues.amp_low =
+            joystickState[id].vibrationValues.amp_high = low_frequency_rumble == 0 ? 0.0f : 320.0f;
+    joystickState[id].vibrationValues.freq_low =
             low_frequency_rumble == 0 ? 160.0f : (float) low_frequency_rumble / 204;
-    joystickState[id].vibrationValues[0].freq_high =
+    joystickState[id].vibrationValues.freq_high =
             high_frequency_rumble == 0 ? 320.0f : (float) high_frequency_rumble / 204;
-    memcpy(&joystickState[id].vibrationValues[1], &joystickState[id].vibrationValues[0], sizeof(HidVibrationValue));
 
-    hidSendVibrationValues(joystickState[id].vibrationDeviceHandles[target_device],
-                           joystickState[id].vibrationValues, 2);
+    hidSendVibrationValues(&joystickState[id].vibrationDeviceHandles, &joystickState[id].vibrationValues, 1);
 
     return 0;
 }
@@ -179,6 +178,7 @@ static void
 SWITCH_JoystickUpdate(SDL_Joystick *joystick)
 {
     u64 changed;
+    HidNpadStyleTag style;
     static SWITCHJoystickState state_old[JOYSTICK_COUNT];
 
     int index = (int) SDL_JoystickInstanceID(joystick);
@@ -187,10 +187,58 @@ SWITCH_JoystickUpdate(SDL_Joystick *joystick)
     }
 
     padUpdate(&joystickState[index].pad);
-
     joystickState[index].stick_l = padGetStickPos(&joystickState[index].pad, 0);
     joystickState[index].stick_r = padGetStickPos(&joystickState[index].pad, 1);
     joystickState[index].buttons = padGetButtons(&joystickState[index].pad);
+
+    style = padGetStyleSet(&joystickState[index].pad);
+    // we have two or more pads detected in dual mode, assume we want single joycon mode
+    if(style & HidNpadStyleTag_NpadJoyDual) {
+        hidSetNpadJoyAssignmentModeSingleByDefault(HidNpadIdType_No1);
+        hidSetNpadJoyAssignmentModeSingleByDefault(HidNpadIdType_No1 + index);
+        hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
+    }
+    if(style & HidNpadStyleTag_NpadJoyLeft) {
+        if(joystickState[index].buttons & HidNpadButton_Left) {
+            joystickState[index].buttons &= ~HidNpadButton_Left;
+            joystickState[index].buttons |= HidNpadButton_B;
+        } else if(joystickState[index].buttons & HidNpadButton_Down) {
+            joystickState[index].buttons &= ~HidNpadButton_Down;
+            joystickState[index].buttons |= HidNpadButton_A;
+        } else if(joystickState[index].buttons & HidNpadButton_Up) {
+            joystickState[index].buttons &= ~HidNpadButton_Up;
+            joystickState[index].buttons |= HidNpadButton_Y;
+        } else if(joystickState[index].buttons & HidNpadButton_Right) {
+            joystickState[index].buttons &= ~HidNpadButton_Right;
+            joystickState[index].buttons |= HidNpadButton_X;
+        } else if(joystickState[index].buttons & HidNpadButton_LeftSL) {
+            joystickState[index].buttons &= ~HidNpadButton_LeftSL;
+            joystickState[index].buttons |= HidNpadButton_L;
+        } else if(joystickState[index].buttons & HidNpadButton_LeftSR) {
+            joystickState[index].buttons &= ~HidNpadButton_LeftSR;
+            joystickState[index].buttons |= HidNpadButton_R;
+        }
+    } else if( style & HidNpadStyleTag_NpadJoyRight) {
+        if(joystickState[index].buttons & HidNpadButton_A) {
+            joystickState[index].buttons &= ~HidNpadButton_A;
+            joystickState[index].buttons |= HidNpadButton_B;
+        } else if(joystickState[index].buttons & HidNpadButton_X) {
+            joystickState[index].buttons &= ~HidNpadButton_X;
+            joystickState[index].buttons |= HidNpadButton_A;
+        } else if(joystickState[index].buttons & HidNpadButton_B) {
+            joystickState[index].buttons &= ~HidNpadButton_B;
+            joystickState[index].buttons |= HidNpadButton_Y;
+        } else if(joystickState[index].buttons & HidNpadButton_Y) {
+            joystickState[index].buttons &= ~HidNpadButton_Y;
+            joystickState[index].buttons |= HidNpadButton_X;
+        } else if(joystickState[index].buttons & HidNpadButton_RightSL) {
+            joystickState[index].buttons &= ~HidNpadButton_RightSL;
+            joystickState[index].buttons |= HidNpadButton_L;
+        } else if(joystickState[index].buttons & HidNpadButton_RightSR) {
+            joystickState[index].buttons &= ~HidNpadButton_RightSR;
+            joystickState[index].buttons |= HidNpadButton_R;
+        }
+    }
 
     // Axes
     if (state_old[index].stick_l.x != joystickState[index].stick_l.x) {
@@ -217,7 +265,8 @@ SWITCH_JoystickUpdate(SDL_Joystick *joystick)
         for (int i = 0; i < joystick->nbuttons; i++) {
             if (changed & pad_mapping[i]) {
                 SDL_PrivateJoystickButton(joystick, (Uint8) i,
-                        (Uint8) ((joystickState[index].buttons & pad_mapping[i]) ? SDL_PRESSED : SDL_RELEASED));
+                        (Uint8) ((joystickState[index].buttons & pad_mapping[i]) ?
+                        SDL_PRESSED : SDL_RELEASED));
             }
         }
     }
