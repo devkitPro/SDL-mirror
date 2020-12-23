@@ -31,25 +31,19 @@
 
 #define MAX_TOUCH 16
 
-typedef struct SwitchTouch
-{
-    SDL_FingerID id;
-    touchPosition position;
-} SwitchTouch;
-
 typedef struct TouchState
 {
-    SwitchTouch touch[MAX_TOUCH];
-    u32 count;
+    SDL_FingerID touch[MAX_TOUCH];
+    HidTouchScreenState state;
 } TouchState;
 
-TouchState touchState;
-
-TouchState touchState_old;
+static TouchState touchState;
+static TouchState touchState_old;
 
 void
 SWITCH_InitTouch(void)
 {
+    hidInitializeTouchScreen();
     SDL_AddTouch((SDL_TouchID) 0, SDL_TOUCH_DEVICE_DIRECT, "Switch");
     SDL_SetHintWithPriority(SDL_HINT_TOUCH_MOUSE_EVENTS, "0", SDL_HINT_DEFAULT);
 }
@@ -69,49 +63,43 @@ SWITCH_PollTouch(void)
     }
 
     memcpy(&touchState_old, &touchState, sizeof(touchState));
+    hidGetTouchScreenStates(&touchState.state, 1);
 
-    touchState.count = hidTouchCount();
-    if (touchState.count >= MAX_TOUCH) {
-        touchState.count = MAX_TOUCH - 1;
+    if (touchState.state.count >= MAX_TOUCH) {
+        touchState.state.count = MAX_TOUCH - 1;
     }
 
-    if (touchState.count > 0) {
-        for (u32 i = 0; i < touchState.count; i++) {
-
-            touchState.touch[i].id = i;
-            hidTouchRead(&touchState.touch[i].position, i);
-
+    if (touchState.state.count > 0) {
+        for (u32 i = 0; i < touchState.state.count; i++) {
+            touchState.touch[i] = i;
             // Send an initial touch
             SDL_SendTouch(0, (SDL_FingerID) i, window, SDL_TRUE,
-                          (float) touchState.touch[i].position.px / 1280.0f,
-                          (float) touchState.touch[i].position.py / 720.0f, 1);
+                          (float) touchState.state.touches[i].x / 1280.0f,
+                          (float) touchState.state.touches[i].y / 720.0f, 1);
 
             // Always send the motion
             SDL_SendTouchMotion(0, (SDL_FingerID) i, window,
-                                (float) touchState.touch[i].position.px / 1280.0f,
-                                (float) touchState.touch[i].position.py / 720.0f, 1);
+                                (float) touchState.state.touches[i].x / 1280.0f,
+                                (float) touchState.state.touches[i].y / 720.0f, 1);
         }
     }
 
     // some fingers might have been let go
-    if (touchState_old.count > 0) {
-
-        for (int i = 0; i < touchState_old.count; i++) {
-
+    if (touchState_old.state.count > 0) {
+        for (int i = 0; i < touchState_old.state.count; i++) {
             int finger_up = 1;
-            if (touchState.count > 0) {
-                for (int j = 0; j < touchState.count; j++) {
-                    if (touchState.touch[j].id == touchState_old.touch[i].id) {
+            if (touchState.state.count > 0) {
+                for (int j = 0; j < touchState.state.count; j++) {
+                    if (touchState.touch[j] == touchState_old.touch[i]) {
                         finger_up = 0;
                     }
                 }
             }
-
             if (finger_up == 1) {
                 // Finger released from screen
-                SDL_SendTouch((SDL_TouchID) 0, (SDL_FingerID) touchState_old.touch[i].id, window, SDL_FALSE,
-                              (float) touchState_old.touch[i].position.px / 1280.0f,
-                              (float) touchState_old.touch[i].position.py / 720.0f, 1);
+                SDL_SendTouch((SDL_TouchID) 0, (SDL_FingerID) touchState_old.touch[i], window, SDL_FALSE,
+                              (float) touchState_old.state.touches[i].x / 1280.0f,
+                              (float) touchState_old.state.touches[i].y / 720.0f, 1);
             }
         }
     }
