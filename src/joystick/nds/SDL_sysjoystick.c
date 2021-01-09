@@ -92,7 +92,7 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 {
 	const int sdl_buttons[] = {
-		KEY_A, KEY_B, KEY_X, KEY_Y, KEY_L, KEY_R, KEY_SELECT, KEY_START
+		KEY_START, KEY_A, KEY_B, KEY_X, KEY_Y, KEY_L, KEY_R, KEY_SELECT
 	};
 
 	u32 keys = keysCurrent();
