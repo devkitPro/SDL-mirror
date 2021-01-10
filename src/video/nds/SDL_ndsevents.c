@@ -32,10 +32,10 @@
 
 void NDS_PumpEvents(_THIS)
 {
-	scanKeys();
+	Uint32 keys = keysCurrent();
 
 	if (this->hidden->touchscreen) {
-		if (keysHeld() & KEY_TOUCH) {
+		if (keys & KEY_TOUCH) {
 			touchPosition touch;
 			touchRead(&touch);
 			SDL_PrivateMouseMotion (0, 0, (touch.px * this->hidden->w) / 256, (touch.py * this->hidden->h) / 192);
@@ -47,6 +47,8 @@ void NDS_PumpEvents(_THIS)
 				SDL_PrivateMouseButton (SDL_RELEASED, SDL_BUTTON_LEFT, 0, 0);
 		}
 	}
+
+	this->hidden->prev_keys = keys;
 }
 
 void NDS_InitOSKeymap(_THIS)

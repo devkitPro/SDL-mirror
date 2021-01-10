@@ -37,6 +37,7 @@ struct SDL_PrivateVideoData {
 	int w, h;
 	void *frontBuffer, *backBuffer;
 	SDL_bool touchscreen;
+	Uint32 prev_keys;
 };
 
 #endif /* _SDL_ndsvideo_h */
