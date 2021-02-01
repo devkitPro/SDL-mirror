@@ -64,7 +64,6 @@ SWITCH_PollMouse(void)
 	if (window == NULL)
 		return;
 
-	//buttons = hidMouseButtonsHeld();
     state_count = hidGetMouseStates(&mouse_state, 1);
 	changed_buttons = mouse_state.buttons ^ prev_buttons;
 
@@ -92,8 +91,6 @@ SWITCH_PollMouse(void)
 	timestamp = SDL_GetTicks();
 
 	if (SDL_TICKS_PASSED(timestamp, last_timestamp + mouse_read_interval)) {
-		//hidMouseRead(&mouse_pos);
-
 		// if hidMouseRead is called once per frame, a factor two on the velocities
 		// results in approximately the same mouse motion as reported by mouse_pos.x and mouse_pos.y
 		// but without the clamping to 1280 x 720

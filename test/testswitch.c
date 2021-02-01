@@ -180,6 +180,10 @@ int main(int argc, char *argv[])
                         done = 1;
                     }
                     break;
+                case SDL_FINGERDOWN:
+                case SDL_FINGERMOTION:
+                    SDL_Log("Touch: %f x %f\n", event.tfinger.x, event.tfinger.y);
+                    break;
                 default:
                     break;
             }
