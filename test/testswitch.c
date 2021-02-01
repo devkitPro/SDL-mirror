@@ -120,8 +120,9 @@ int main(int argc, char *argv[])
     // when railed, both joycons are mapped to joystick #0,
     // else joycons are individually mapped to joystick #0, joystick #1, ...
     // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L45
+    SDL_Joystick *joys[2];
     for (int i = 0; i < 2; i++) {
-        if (SDL_JoystickOpen(i) == NULL) {
+        if ((joys[i] = SDL_JoystickOpen(i)) == NULL) {
             SDL_Log("SDL_JoystickOpen: %s\n", SDL_GetError());
             SDL_Quit();
             return -1;
@@ -129,19 +130,32 @@ int main(int argc, char *argv[])
     }
 
     while (!done) {
-
         while (SDL_PollEvent(&event)) {
-
             switch (event.type) {
-
                 case SDL_JOYAXISMOTION:
-                    SDL_Log("Joystick %d axis %d value: %d\n",
-                            event.jaxis.which,
-                            event.jaxis.axis, event.jaxis.value);
+                    if(event.jaxis.axis == 0 || event.jaxis.axis == 2) {
+                        if(event.jaxis.value > 20000) {
+                            SDL_Log("Joystick(%d): RIGHT (axis %d, value: %d)\n",
+                                    event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+                        } else if(event.jaxis.value < -20000) {
+                            SDL_Log("Joystick(%d): LEFT (axis %d, value: %d)\n",
+                                    event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+                        }
+                    } else if(event.jaxis.axis == 1 || event.jaxis.axis == 3) {
+                        if(event.jaxis.value > 20000) {
+                            SDL_Log("Joystick(%d): DOWN (axis %d, value: %d)\n",
+                                    event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+                        } else if(event.jaxis.value < -20000) {
+                            SDL_Log("Joystick(%d): UP (axis %d, value: %d)\n",
+                                    event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+                        }
+                    }
                     break;
-
                 case SDL_JOYBUTTONDOWN:
-                    SDL_Log("Joystick %d button %d down\n",
+                    SDL_JoystickRumble(joys[0], 30000, 30000, 1000);
+                    SDL_JoystickRumble(joys[1], 30000, 30000, 1000);
+
+                    SDL_Log("Joystick(%d): button %d down\n",
                             event.jbutton.which, event.jbutton.button);
                     // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L52
                     if (event.jbutton.which == 0) {
@@ -161,12 +175,11 @@ int main(int argc, char *argv[])
                             print_info(window, renderer);
                         }
                     }
-                    // joystick #0 down (B)
-                    if (event.jbutton.which == 0 && event.jbutton.button == 1) {
+                    // joystick #0 down (+/-)
+                    if (event.jbutton.button == 10 || event.jbutton.button == 11) {
                         done = 1;
                     }
                     break;
-
                 default:
                     break;
             }

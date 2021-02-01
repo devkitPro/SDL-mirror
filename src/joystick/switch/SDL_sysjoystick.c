@@ -179,6 +179,9 @@ SWITCH_JoystickUpdate(SDL_Joystick *joystick)
 {
     u64 changed;
     HidNpadStyleTag style;
+    HidAnalogStickState stick_l;
+    HidAnalogStickState stick_r;
+    u64 buttons;
     static SWITCHJoystickState state_old[JOYSTICK_COUNT];
 
     int index = (int) SDL_JoystickInstanceID(joystick);
@@ -187,54 +190,99 @@ SWITCH_JoystickUpdate(SDL_Joystick *joystick)
     }
 
     padUpdate(&joystickState[index].pad);
-    joystickState[index].stick_l = padGetStickPos(&joystickState[index].pad, 0);
-    joystickState[index].stick_r = padGetStickPos(&joystickState[index].pad, 1);
-    joystickState[index].buttons = padGetButtons(&joystickState[index].pad);
+    stick_l = joystickState[index].stick_l = padGetStickPos(&joystickState[index].pad, 0);
+    stick_r = joystickState[index].stick_r = padGetStickPos(&joystickState[index].pad, 1);
+    buttons = joystickState[index].buttons = padGetButtons(&joystickState[index].pad);
 
     style = padGetStyleSet(&joystickState[index].pad);
     // we have two or more pads detected in dual mode, assume we want single joycon mode
     if(style & HidNpadStyleTag_NpadJoyDual) {
-        hidSetNpadJoyAssignmentModeSingleByDefault(HidNpadIdType_No1);
         hidSetNpadJoyAssignmentModeSingleByDefault(HidNpadIdType_No1 + index);
         hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
     }
     if(style & HidNpadStyleTag_NpadJoyLeft) {
-        if(joystickState[index].buttons & HidNpadButton_Left) {
+        joystickState[index].stick_l.x = -stick_l.y;
+        joystickState[index].stick_l.y = stick_l.x;
+        if(buttons & HidNpadButton_Left) {
             joystickState[index].buttons &= ~HidNpadButton_Left;
             joystickState[index].buttons |= HidNpadButton_B;
-        } else if(joystickState[index].buttons & HidNpadButton_Down) {
+        }
+        if(buttons & HidNpadButton_Down) {
             joystickState[index].buttons &= ~HidNpadButton_Down;
             joystickState[index].buttons |= HidNpadButton_A;
-        } else if(joystickState[index].buttons & HidNpadButton_Up) {
+        }
+        if(buttons & HidNpadButton_Up) {
             joystickState[index].buttons &= ~HidNpadButton_Up;
             joystickState[index].buttons |= HidNpadButton_Y;
-        } else if(joystickState[index].buttons & HidNpadButton_Right) {
+        }
+        if(buttons & HidNpadButton_Right) {
             joystickState[index].buttons &= ~HidNpadButton_Right;
             joystickState[index].buttons |= HidNpadButton_X;
-        } else if(joystickState[index].buttons & HidNpadButton_LeftSL) {
+        }
+        if(buttons & HidNpadButton_StickLLeft) {
+            joystickState[index].buttons &= ~HidNpadButton_StickLLeft;
+            joystickState[index].buttons |= HidNpadButton_StickLDown;
+        }
+        if(buttons & HidNpadButton_StickLDown) {
+            joystickState[index].buttons &= ~HidNpadButton_StickLDown;
+            joystickState[index].buttons |= HidNpadButton_StickLRight;
+        }
+        if(buttons & HidNpadButton_StickLRight) {
+            joystickState[index].buttons &= ~HidNpadButton_StickLRight;
+            joystickState[index].buttons |= HidNpadButton_StickLUp;
+        }
+        if(buttons & HidNpadButton_StickLUp) {
+            joystickState[index].buttons &= ~HidNpadButton_StickLUp;
+            joystickState[index].buttons |= HidNpadButton_StickLLeft;
+        }
+        if(buttons & HidNpadButton_LeftSL) {
             joystickState[index].buttons &= ~HidNpadButton_LeftSL;
             joystickState[index].buttons |= HidNpadButton_L;
-        } else if(joystickState[index].buttons & HidNpadButton_LeftSR) {
+        }
+        if(buttons & HidNpadButton_LeftSR) {
             joystickState[index].buttons &= ~HidNpadButton_LeftSR;
             joystickState[index].buttons |= HidNpadButton_R;
         }
-    } else if( style & HidNpadStyleTag_NpadJoyRight) {
-        if(joystickState[index].buttons & HidNpadButton_A) {
+    } else if(style & HidNpadStyleTag_NpadJoyRight) {
+        joystickState[index].stick_r.x = stick_r.y;
+        joystickState[index].stick_r.y = -stick_r.x;
+        if(buttons & HidNpadButton_A) {
             joystickState[index].buttons &= ~HidNpadButton_A;
             joystickState[index].buttons |= HidNpadButton_B;
-        } else if(joystickState[index].buttons & HidNpadButton_X) {
+        }
+        if(buttons & HidNpadButton_X) {
             joystickState[index].buttons &= ~HidNpadButton_X;
             joystickState[index].buttons |= HidNpadButton_A;
-        } else if(joystickState[index].buttons & HidNpadButton_B) {
+        }
+        if(buttons & HidNpadButton_B) {
             joystickState[index].buttons &= ~HidNpadButton_B;
             joystickState[index].buttons |= HidNpadButton_Y;
-        } else if(joystickState[index].buttons & HidNpadButton_Y) {
+        }
+        if(buttons & HidNpadButton_Y) {
             joystickState[index].buttons &= ~HidNpadButton_Y;
             joystickState[index].buttons |= HidNpadButton_X;
-        } else if(joystickState[index].buttons & HidNpadButton_RightSL) {
+        }
+        if(buttons & HidNpadButton_StickRLeft) {
+            joystickState[index].buttons &= ~HidNpadButton_StickRLeft;
+            joystickState[index].buttons |= HidNpadButton_StickRUp;
+        }
+        if(buttons & HidNpadButton_StickRDown) {
+            joystickState[index].buttons &= ~HidNpadButton_StickRDown;
+            joystickState[index].buttons |= HidNpadButton_StickRLeft;
+        }
+        if(buttons & HidNpadButton_StickRRight) {
+            joystickState[index].buttons &= ~HidNpadButton_StickRRight;
+            joystickState[index].buttons |= HidNpadButton_StickRDown;
+        }
+        if(buttons & HidNpadButton_StickRUp) {
+            joystickState[index].buttons &= ~HidNpadButton_StickRUp;
+            joystickState[index].buttons |= HidNpadButton_StickRRight;
+        }
+        if(buttons & HidNpadButton_RightSL) {
             joystickState[index].buttons &= ~HidNpadButton_RightSL;
             joystickState[index].buttons |= HidNpadButton_L;
-        } else if(joystickState[index].buttons & HidNpadButton_RightSR) {
+        }
+        if(buttons & HidNpadButton_RightSR) {
             joystickState[index].buttons &= ~HidNpadButton_RightSR;
             joystickState[index].buttons |= HidNpadButton_R;
         }
@@ -250,11 +298,11 @@ SWITCH_JoystickUpdate(SDL_Joystick *joystick)
         state_old[index].stick_l.y = -joystickState[index].stick_l.y;
     }
     if (state_old[index].stick_r.x != joystickState[index].stick_r.x) {
-        SDL_PrivateJoystickAxis(joystick, 2, (Sint16) joystickState[index].stick_r.x);
+        SDL_PrivateJoystickAxis(joystick, style & HidNpadStyleTag_NpadJoyRight ? 0 : 2, (Sint16) joystickState[index].stick_r.x);
         state_old[index].stick_r.x = joystickState[index].stick_r.x;
     }
     if (state_old[index].stick_r.y != joystickState[index].stick_r.y) {
-        SDL_PrivateJoystickAxis(joystick, 3, (Sint16) -joystickState[index].stick_r.y);
+        SDL_PrivateJoystickAxis(joystick, style & HidNpadStyleTag_NpadJoyRight ? 1 : 3, (Sint16) -joystickState[index].stick_r.y);
         state_old[index].stick_r.y = -joystickState[index].stick_r.y;
     }
 
