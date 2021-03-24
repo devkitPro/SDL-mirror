@@ -334,7 +334,7 @@ static void WIIUAUDIO_PlayDevice(_THIS) {
 
 static void WIIUAUDIO_WaitDevice(_THIS) {
 /*  TODO use real thread sync stuff */
-    while (this->hidden->renderingid == this->hidden->playingid) {
+    while (SDL_AtomicGet(&this->enabled) && this->hidden->renderingid == this->hidden->playingid) {
         OSSleepTicks(OSMillisecondsToTicks(3));
     }
 }
@@ -346,6 +346,7 @@ static Uint8* WIIUAUDIO_GetDeviceBuf(_THIS) {
 
 static void WIIUAUDIO_CloseDevice(_THIS) {
     if (AXIsInit()) {
+        AXDeregisterAppFrameCallback(_WIIUAUDIO_framecallback);
         for (int i = 0; i < SIZEOF_ARR(this->hidden->voice); i++) {
             if (this->hidden->voice[i]) {
                 AXFreeVoice(this->hidden->voice[i]);
