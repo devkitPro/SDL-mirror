@@ -151,6 +151,7 @@ typedef struct SDL_Surface {
 #define SDL_FITHEIGHT	0x00800000	/**> Render a resized surface to fit systen screen height */
 #define SDL_CONSOLETOP	0x00040000	/**> Enale console output on Top screen */
 #define SDL_CONSOLEBOTTOM	0x00080000	/**> Enale console output on Bottom screen */
+#define SDL_SYNCDRAW	0x00020000	/**> Perform frame sync before checking the GPU status when drawing */
 #endif
 /*@}*/
 
