@@ -21,6 +21,15 @@
 */
 #include "SDL_config.h"
 
-#include "SDL_ndsvideo.h"
+#ifndef _SDL_maxmodaudio_h
+#define _SDL_maxmodaudio_h
 
-/* Functions to be exported */
+#include "../SDL_sysaudio.h"
+
+/* Hidden "this" pointer for the audio functions */
+#define _THIS	SDL_AudioDevice *this
+
+struct SDL_PrivateAudioData {
+};
+
+#endif /* _SDL_maxmodaudio_h */

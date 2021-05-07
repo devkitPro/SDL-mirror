@@ -143,7 +143,7 @@ typedef struct SDL_Surface {
 #define SDL_OPENGLBLIT	0x0000000A	/**< Create an OpenGL rendering context and use it for blitting */
 #define SDL_RESIZABLE	0x00000010	/**< This video mode may be resized */
 #define SDL_NOFRAME		0x00000020	/**< No window caption or edge frame */
-#ifdef __N3DS__
+#if defined(__NDS__) || defined(__N3DS__)
 #define SDL_TOPSCR		0x00100000	/**< N3DS Top Screen mode */
 #define SDL_BOTTOMSCR	0x00200000	/**< N3DS Bottom Screen mode */
 #define SDL_DUALSCR		0x00300000	/**< N3DS Top+Bottom Screen mode */

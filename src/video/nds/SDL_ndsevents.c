@@ -30,53 +30,30 @@
 #include "SDL_ndsvideo.h"
 #include "SDL_ndsevents_c.h"
 
-static SDLKey keymap[NDS_NUMKEYS];
-char keymem[NDS_NUMKEYS];	/* memorize states of buttons */
-
 void NDS_PumpEvents(_THIS)
 {
-	scanKeys();
-	int i;
-	SDL_keysym keysym;
-	keysym.mod=KMOD_NONE;
-	for(i=0;i<NDS_NUMKEYS;i++)
-	{
-		keysym.scancode=i;
-		keysym.sym=keymap[i];
-		if(keysHeld()&(1<<i) && !keymem[i])
-		{
-			keymem[i]=1;
-			//printf("key released %d\n",i);
-			SDL_PrivateKeyboard(SDL_RELEASED, &keysym);
-		}
-		if(!(keysHeld()&(1<<i)) && keymem[i])
-		{
-			keymem[i]=0;
-			//printf("key pressed %d\n",i);
-			SDL_PrivateKeyboard(SDL_PRESSED, &keysym);
+	Uint32 keys = keysCurrent();
+
+	if (this->hidden->touchscreen) {
+		if (keys & KEY_TOUCH) {
+			touchPosition touch;
+			touchRead(&touch);
+			SDL_PrivateMouseMotion (0, 0, (touch.px * this->hidden->w) / 256, (touch.py * this->hidden->h) / 192);
+
+			if (!SDL_GetMouseState (NULL, NULL))
+				SDL_PrivateMouseButton (SDL_PRESSED, SDL_BUTTON_LEFT, 0, 0);
+		} else {
+			if (SDL_GetMouseState (NULL, NULL))
+				SDL_PrivateMouseButton (SDL_RELEASED, SDL_BUTTON_LEFT, 0, 0);
 		}
 	}
-	//touchPosition touch;
-	//touch=touchReadXY();
-	//if (touch.px!=0 || touch.py!=0)
-	//	SDL_PrivateMouseMotion(SDL_PRESSED, 0, touch.px, touch.py);
+
+	this->hidden->prev_keys = keys;
 }
 
 void NDS_InitOSKeymap(_THIS)
 {
-	SDL_memset(keymem,1,NDS_NUMKEYS);
-	keymap[KEY_A]=SDLK_a;
-	keymap[KEY_B]=SDLK_s;
-	keymap[KEY_X]=SDLK_w;
-	keymap[KEY_Y]=SDLK_d;
-	keymap[KEY_L]=SDLK_q;
-	keymap[KEY_R]=SDLK_e;
-	keymap[KEY_UP]=SDLK_UP;
-	keymap[KEY_DOWN]=SDLK_DOWN;
-	keymap[KEY_LEFT]=SDLK_LEFT;
-	keymap[KEY_RIGHT]=SDLK_RIGHT;
-	keymap[KEY_SELECT]=SDLK_SPACE;
-	keymap[KEY_START]=SDLK_RETURN;
+	/* Do nothing */
 }
 
 /* end of SDL_gbaevents.c ... */

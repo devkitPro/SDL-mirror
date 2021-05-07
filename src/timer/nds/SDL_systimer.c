@@ -28,15 +28,14 @@
 
 #include <nds.h>
 
-#define timers2ms(tlow,thigh)(tlow | (thigh<<16)) >> 5
-
+#define timers2ms(tlow,thigh) (tlow | (thigh<<16)) >> 5
 
 void SDL_StartTicks(void)
 {
-   TIMER0_DATA=0; 
-   TIMER1_DATA=0; 
-   TIMER0_CR=TIMER_ENABLE|TIMER_DIV_1024; 
-   TIMER1_CR=TIMER_ENABLE|TIMER_CASCADE;
+	TIMER0_DATA=0; 
+	TIMER1_DATA=0; 
+	TIMER0_CR=TIMER_ENABLE|TIMER_DIV_1024; 
+	TIMER1_CR=TIMER_ENABLE|TIMER_CASCADE;
 }
 
 Uint32 SDL_GetTicks(void)
@@ -46,10 +45,9 @@ Uint32 SDL_GetTicks(void)
 
 void SDL_Delay(Uint32 ms)
 {
-   Uint32 now; 
-   now=timers2ms(TIMER0_DATA, TIMER1_DATA); 
-   while((Uint32)timers2ms(TIMER0_DATA, TIMER1_DATA)<now+ms); 
-
+	Uint32 now; 
+	now=timers2ms(TIMER0_DATA, TIMER1_DATA); 
+	while((Uint32)timers2ms(TIMER0_DATA, TIMER1_DATA)<now+ms); 
 }
 
 /* This is only called if the event thread is not running */
